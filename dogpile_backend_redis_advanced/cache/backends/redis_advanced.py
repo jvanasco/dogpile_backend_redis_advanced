@@ -11,10 +11,10 @@ from dogpile.cache.backends.redis import RedisBackend
 from dogpile.util.compat import pickle, u
 
 from collections import defaultdict
+import pdb
 
 import redis
 
-import pdb
 
 __all__ = ('RedisAdvancedBackend',
            'RedisAdvancedHstoreBackend',

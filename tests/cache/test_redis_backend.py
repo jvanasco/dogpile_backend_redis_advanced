@@ -1,14 +1,19 @@
 from dogpile.cache.api import CachedValue, NO_VALUE
 from dogpile.cache.region import _backend_loader
+from dogpile.cache.region import value_version
 from ._fixtures import _GenericBackendTest, _GenericMutexTest, _GenericBackendFixture
 from . import eq_, assert_raises_message
+
+from threading import Thread, Lock
 from unittest import TestCase
-from mock import patch, Mock
-import pytest
 import os
-import msgpack
 import pdb
 import time
+import unittest
+
+from mock import patch, Mock
+import msgpack
+import pytest
 
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = int(os.getenv('DOGPILE_REDIS_PORT', '6379'))
@@ -201,7 +206,8 @@ def my_loads(value):
     ''''
     we need to unpack the value and stash it into a CachedValue
     we support strings in this version, because it's used in unit tests
-    that require the ability to set/read raw data
+    that require the ability to set/read raw data.
+    we could disable that test, but this workaround supports it.
     '''
     value = msgpack.unpackb(value, use_list=False)
     if isinstance(value, tuple):
@@ -228,6 +234,109 @@ class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate_Test):
 
 
 class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate_Test):
+    backend = 'dogpile.cache.redis_advanced_hstore'
+
+
+def my_loads(value):
+    ''''
+    we need to unpack the value and stash it into a CachedValue
+    we support strings in this version, because it's used in unit tests
+    that require the ability to set/read raw data
+    '''
+    value = msgpack.unpackb(value, use_list=False)
+    if isinstance(value, tuple):
+        return CachedValue(*value)
+    return value
+    
+# ==============================================================================
+
+
+
+def raw_loads(value):
+    ''''
+    we need to unpack the value and stash it into a CachedValue
+    '''
+    value = msgpack.unpackb(value, use_list=False)
+    return CachedValue(
+        value,
+        {
+            "ct": time.time(),
+            "v": value_version
+        })
+
+def raw_dumps(value):
+    if isinstance(value, CachedValue):
+        value = value.payload
+    value = msgpack.packb(value)
+    return value
+
+class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
+    """
+    """
+    config_args = {
+        "arguments": {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            "foo": "barf",
+            'loads': raw_loads,
+            'dumps': raw_dumps,
+            'redis_expiration_time': 1,
+        }
+    }
+    
+    @unittest.skip("do not test get/set of raw value")
+    def test_backend_set_get_value(self):
+        pass
+
+    @unittest.skip("do not test region expiry, we defer expiry to the cloud")
+    def test_region_expire(self):
+        pass
+    
+    # @unittest.skip("should be rewritten to test concurrency with cloud")
+    def test_threaded_dogpile(self):
+        """
+        this is modified version of the fixture
+        1. adjusted the sleep
+        2. removed the region arguments
+        """
+        # run a basic dogpile concurrency test.
+        # note the concurrency of dogpile itself
+        # is intensively tested as part of dogpile.
+        reg = self._region()
+        lock = Lock()
+        canary = []
+
+        def creator():
+            ack = lock.acquire(False)
+            canary.append(ack)
+            time.sleep(1)
+            if ack:
+                lock.release()
+            return "some value"
+
+        def f():
+            for x in range(5):
+                reg.get_or_create("some key", creator)
+                time.sleep(1.25)
+
+        threads = [Thread(target=f) for i in range(10)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        assert len(canary) > 2
+        if not reg.backend.has_lock_timeout():
+            assert False not in canary
+        else:
+            assert False in canary
+
+
+class RedisAdvanced_SerializedRaw_Test(_SerializedRaw_Test):
+    backend = 'dogpile.cache.redis_advanced'
+
+
+class RedisAdvancedHstore_SerializedRaw_Test(_SerializedRaw_Test):
     backend = 'dogpile.cache.redis_advanced_hstore'
 
 
