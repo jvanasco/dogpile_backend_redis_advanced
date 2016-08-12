@@ -86,11 +86,11 @@ class _Compatibility_Test(_TestRedisConn, _GenericBackendTest):
 
 
 class RedisAdvanced_Compatibility_Test(_Compatibility_Test):
-    backend = 'dogpile.cache.redis_advanced'
+    backend = 'dogpile_backend_redis_advanced'
 
 
 class RedisAdvancedHstore_Compatibility_Test(_Compatibility_Test):
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -108,11 +108,11 @@ class _Compatibility_DistributedMutexTest(_TestRedisConn, _GenericMutexTest):
 
 
 class RedisAdvanced_Compatibility_DistributedMutexTest(_Compatibility_DistributedMutexTest):
-    backend = 'dogpile.cache.redis_advanced'
+    backend = 'dogpile_backend_redis_advanced'
 
 
 class RedisAdvancedHstore_Compatibility_DistributedMutexTest(_Compatibility_DistributedMutexTest):
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -192,11 +192,11 @@ class _Compatibility_ConnectionTest(TestCase):
 
 
 class RedisAdvanced_Compatibility_ConnectionTest(_Compatibility_ConnectionTest):
-    backend = 'dogpile.cache.redis_advanced'
+    backend = 'dogpile_backend_redis_advanced'
 
 
 class RedisAdvancedHstore_Compatibility_ConnectionTest(_Compatibility_ConnectionTest):
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
 
 
 # ==============================================================================
@@ -230,11 +230,11 @@ class _SerializedAlternate_Test(_TestRedisConn, _GenericBackendTest):
 
 
 class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate_Test):
-    backend = 'dogpile.cache.redis_advanced'
+    backend = 'dogpile_backend_redis_advanced'
 
 
 class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate_Test):
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
 
 
 def my_loads(value):
@@ -293,10 +293,9 @@ class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
     def test_region_expire(self):
         pass
     
-    # @unittest.skip("should be rewritten to test concurrency with cloud")
     def test_threaded_dogpile(self):
         """
-        this is modified version of the fixture
+        this is modified version of the upstream fixture test
         1. adjusted the sleep
         2. removed the region arguments
         """
@@ -333,11 +332,11 @@ class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
 
 
 class RedisAdvanced_SerializedRaw_Test(_SerializedRaw_Test):
-    backend = 'dogpile.cache.redis_advanced'
+    backend = 'dogpile_backend_redis_advanced'
 
 
 class RedisAdvancedHstore_SerializedRaw_Test(_SerializedRaw_Test):
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
 
 
 # ==============================================================================
@@ -367,7 +366,7 @@ for k in keys_mixed:
 
 class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
     # tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
-    backend = 'dogpile.cache.redis_advanced_hstore'
+    backend = 'dogpile_backend_redis_advanced_hstore'
     config_args = {
         "arguments": {
             'host': REDIS_HOST,
