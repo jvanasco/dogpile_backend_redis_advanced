@@ -372,7 +372,7 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
             'host': REDIS_HOST,
             'port': REDIS_PORT,
             'db': 0,
-            'redis_expiration_time': 10,
+            'redis_expiration_time': 3,
         }
     }
     

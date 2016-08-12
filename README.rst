@@ -133,6 +133,67 @@ Please note the following:
 * if `redis_expiration_time_hash` is set to `None`, there will be 2-3 calls to the redis API for every key: `exists`, `hset` or `hmset`, and possibly `expires`
 
 
+Memory Savings and Suggested Usage
+--------------------------------------
+
+Redis is an in-memory datastore that offers persistence -- optimizing storage is incredibly important because the entire set must be held in-memory.
+
+The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies.
+
+
+| test 				       | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                               |
+|---	  				   | ---	      |---	         | ---      | ---           | ---             | ---                                   |
+| region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | dogpile.cache.redis                   |
+| region_msgpack   		   | 188472048    | 179.74M      | 75.57%   | Y             | Y               | dogpile_backend_redis_advanced        |
+| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | dogpile.cache.redis 			      |
+| region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | dogpile_backend_redis_advanced        |
+| region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | dogpile_backend_redis_advanced        |
+| region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | dogpile_backend_redis_advanced        |
+| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y             | -               | dogpile_backend_redis_advanced_hstore |
+
+* the `_local` variants do not set a TTL on Redis
+* the `_raw` variants strip out the dogpile CachedValue wrapper and only store the payload
+* the `msgpack` variants use msgpack instead of pickle 
+
+Wait WHAT? LOOK AT `region_msgpack_raw_hash` - that's a HUGE savings!
+
+Yes.
+
+The HSTORE has considerable savings due to 2 reasons:
+
+* Redis internally manages a hash much more effectively than keys.
+* Redis will only put an expiry on the keys (buckets), not the hash fields
+
+It ends up being a much tighter memory usage
+
+Note that `region_msgpack_raw_local` should not be used.  it has no expiry - it's just shown for reference.
+
+So what should you use?
+
+There are several tradeoffs and concepts to consider:
+
+1. Do you want to access information outside of dogpile (in Python scripts, or even in another language)
+2. Do you want the TTL to be handled by Redis or within Python?
+3. What are your expiry needs?  what do your keys look like?  there may not be any savings possible.  but if you have a lot of recycled prefixes, there could be.
+
+This is a structured test, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB Redis imprint to the 60-80MB range.
+
+The redis configuration file is also enclosed.  the above tests are done with redis compression turned on (which is why memory size fluctuates in the full demo report).   
+
+
+To Do
+--------------------------------------
+I've been experimenting with handling the TTL within a hash bucket (instead of using the Redis or dogpile methods).
+This looks promising.  The rationale is that it is easier for Redis to get/set an extra field from the same hash, than it is to do separate calls to TTL/EXPIRES.  
+
+in code:
+
+	- hset('example', 'foo', 'bar')
+	- expires('example', 3600)
+	+ hmset('example', {'foo': 'bar',
+	                    'expires': time.time() + 3600,
+	                    }
+
 
 Maintenance and Upstream Compatibility
 --------------------------------------
@@ -161,6 +222,8 @@ Examples:
 
 	tox
 	tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Test
+	tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
+	
 
 
 License
