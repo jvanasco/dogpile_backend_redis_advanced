@@ -40,21 +40,21 @@ Two new configuration options are offered to specify custom serializers via
 
 This option was designed to support `msgpack` as the serializer:
 
-	import msgpack
-	from dogpile.cache.api import CachedValue
+    import msgpack
+    from dogpile.cache.api import CachedValue
 
-	def msgpack_loads(value):
-		"""pickle maintained the `CachedValue` wrapper of the tuple
-		   msgpack does not, so it must be added back in.
-		   """
-		value = msgpack.unpackb(value, use_list=False)
-		return CachedValue(*value)
+    def msgpack_loads(value):
+        """pickle maintained the `CachedValue` wrapper of the tuple
+           msgpack does not, so it must be added back in.
+           """
+        value = msgpack.unpackb(value, use_list=False)
+        return CachedValue(*value)
 
     region = make_region().configure(
-    	arguments= {'loads': msgpack_loads,
-					'dumps': msgpack.packb,
-					}
-		)
+        arguments= {'loads': msgpack_loads,
+                    'dumps': msgpack.packb,
+                    }
+        )
 
 
 One can also abuse/misuse dogpile and defer all cache expiry to Redis using this
@@ -73,35 +73,35 @@ caching, this will allow you to leverage dogpile's excellent locking mechanism
 for handling read-through caching while slimming down your cache size and the
 traffic on-the-wire.  
 
-	import time
-	from dogpile.cache.api import CachedValue
-	from dogpile.cache.region import value_version
-	import msgpack
+    import time
+    from dogpile.cache.api import CachedValue
+    from dogpile.cache.region import value_version
+    import msgpack
 
-	def raw_dumps(value):
-		''''pull the payload out of the CachedValue and serialize that
-		'''
-		value = value.payload
-		value = msgpack.packb(value)
-		return value
+    def raw_dumps(value):
+        ''''pull the payload out of the CachedValue and serialize that
+        '''
+        value = value.payload
+        value = msgpack.packb(value)
+        return value
 
-	def raw_loads(value):
-		''''unpack the value and return a CachedValue with the current time
-		'''
-		value = msgpack.unpackb(value, use_list=False)
-		return CachedValue(
-			value,
-			{
-				"ct": time.time(),
-				"v": value_version
-			})
+    def raw_loads(value):
+        ''''unpack the value and return a CachedValue with the current time
+        '''
+        value = msgpack.unpackb(value, use_list=False)
+        return CachedValue(
+            value,
+            {
+                "ct": time.time(),
+                "v": value_version
+            })
 
     region = make_region().configure(
-    	arguments= {'loads': msgpack_loads,
-					'dumps': msgpack.packb,
-		            'redis_expiration_time': 1,
-					}
-		)
+        arguments= {'loads': msgpack_loads,
+                    'dumps': msgpack.packb,
+                    'redis_expiration_time': 1,
+                    }
+        )
 
 
 RedisAdvancedHstoreBackend
@@ -140,12 +140,11 @@ Redis is an in-memory datastore that offers persistence -- optimizing storage is
 
 The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies.
 
-
-| test 				       | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                                 |
-| ---	  				   | ---	      | ---	         | ---      | ---           | ---             | ---                                     |
+| test                     | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                                 |
+| ------------------------ | ------------ | ------------ | -------- | ------------- | --------------- | --------------------------------------- |
 | region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | `dogpile.cache.redis`                   |
-| region_msgpack   		   | 188472048    | 179.74M      | 75.57%   | Y             | Y               | `dogpile_backend_redis_advanced`        |
-| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | `dogpile.cache.redis` 			        |
+| region_msgpack           | 188472048    | 179.74M      | 75.57%   | Y             | Y               | `dogpile_backend_redis_advanced`        |
+| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | `dogpile.cache.redis`                   |
 | region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | `dogpile_backend_redis_advanced`        |
 | region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | `dogpile_backend_redis_advanced`        |
 | region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | `dogpile_backend_redis_advanced`        |
@@ -192,8 +191,8 @@ in code:
 - hset('example', 'foo', 'bar')
 - expires('example', 3600)
 + hmset('example', {'foo': 'bar',
-					'expires': time.time() + 3600,
-					}
+                    'expires': time.time() + 3600,
+                    }
 ```
 
 
@@ -202,10 +201,10 @@ Maintenance and Upstream Compatibility
 
 Some files in /tests are entirely from dogpile as-is:
 
-*	/tests/conftest.py
-*	/tests/cache/__init__.py
-*	/tests/cache/_fixtures.py
-		
+*   /tests/conftest.py
+*   /tests/cache/__init__.py
+*   /tests/cache/_fixtures.py
+        
 They are versions from dogpile.cache 0.6.2
 
 The core file, `/cache/backends/redis_advanced.py` inherits from dogpile's `/cache/backends/redis.py`
@@ -227,7 +226,7 @@ tox
 tox -e py27 -- tests/cache/test_redis_backend.py
 tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Test
 tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
-```	
+``` 
 
 
 License
