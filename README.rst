@@ -141,15 +141,15 @@ Redis is an in-memory datastore that offers persistence -- optimizing storage is
 The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies.
 
 
-| test 				       | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                               |
-|---	  				   | ---	      |---	         | ---      | ---           | ---             | ---                                   |
-| region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | dogpile.cache.redis                   |
-| region_msgpack   		   | 188472048    | 179.74M      | 75.57%   | Y             | Y               | dogpile_backend_redis_advanced        |
-| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | dogpile.cache.redis 			      |
-| region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | dogpile_backend_redis_advanced        |
-| region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | dogpile_backend_redis_advanced        |
-| region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | dogpile_backend_redis_advanced        |
-| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y             | -               | dogpile_backend_redis_advanced_hstore |
+| test 				       | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                                 |
+| ---	  				   | ---	      | ---	         | ---      | ---           | ---             | ---                                     |
+| region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | `dogpile.cache.redis`                   |
+| region_msgpack   		   | 188472048    | 179.74M      | 75.57%   | Y             | Y               | `dogpile_backend_redis_advanced`        |
+| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | `dogpile.cache.redis` 			        |
+| region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | `dogpile_backend_redis_advanced`        |
+| region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | `dogpile_backend_redis_advanced`        |
+| region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | `dogpile_backend_redis_advanced`        |
+| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y             | -               | `dogpile_backend_redis_advanced_hstore` |
 
 * the `_local` variants do not set a TTL on Redis
 * the `_raw` variants strip out the dogpile CachedValue wrapper and only store the payload
@@ -164,7 +164,7 @@ The HSTORE has considerable savings due to 2 reasons:
 * Redis internally manages a hash much more effectively than keys.
 * Redis will only put an expiry on the keys (buckets), not the hash fields
 
-It ends up being a much tighter memory usage
+It ends up being a much tighter memory usage for this example set, as we're setting 100 fields in each key.
 
 Note that `region_msgpack_raw_local` should not be used.  it has no expiry - it's just shown for reference.
 
@@ -188,11 +188,13 @@ This looks promising.  The rationale is that it is easier for Redis to get/set a
 
 in code:
 
-	- hset('example', 'foo', 'bar')
-	- expires('example', 3600)
-	+ hmset('example', {'foo': 'bar',
-	                    'expires': time.time() + 3600,
-	                    }
+```
+- hset('example', 'foo', 'bar')
+- expires('example', 3600)
++ hmset('example', {'foo': 'bar',
+					'expires': time.time() + 3600,
+					}
+```
 
 
 Maintenance and Upstream Compatibility
@@ -200,13 +202,13 @@ Maintenance and Upstream Compatibility
 
 Some files in /tests are entirely from dogpile as-is:
 
-	/tests/conftest.py
-	/tests/cache/__init__.py
-	/tests/cache/_fixtures.py
+*	/tests/conftest.py
+*	/tests/cache/__init__.py
+*	/tests/cache/_fixtures.py
 		
 They are versions from dogpile.cache 0.6.2
 
-The core file, dogpile_backend_redis_advanced/cache/backends/redis_advanced.py inherits from dogpile/cache/backends.redis
+The core file, `/cache/backends/redis_advanced.py` inherits from dogpile's `/cache/backends/redis.py`
 
 
 Testing
@@ -220,10 +222,12 @@ Tests are handled through tox
 
 Examples:
 
-	tox
-	tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Test
-	tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
-	
+```
+tox
+tox -e py27 -- tests/cache/test_redis_backend.py
+tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Test
+tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
+```	
 
 
 License
