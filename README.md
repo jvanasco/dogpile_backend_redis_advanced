@@ -1,19 +1,15 @@
 dogpile_backend_redis_advanced
 ==============================
 
-This is a plugin for the dogpile cache system that offers some alternatives to
-the standard Redis datastore implementation.
+This is a plugin for the `dogpile.cache` system that offers some alternatives to
+the standard `Redis` datastore implementation.
 
 Two new backends are offered:
 
-* dogpile_backend_redis_advanced
-* dogpile_backend_redis_advanced_hstore
-
-`dogpile_backend_redis_advanced` extends the `dogpile.cache.redis` backend
-and allows for custom pickling overrides
-
-`dogpile_backend_redis_advanced_hstore` extends `dogpile_backend_redis_advanced`
-and allows for some specific hstore operations
+| backend | description |
+| --- | --- |
+| `dogpile_backend_redis_advanced` | extends the `dogpile.cache.redis` backend and allows for custom pickling overrides |
+| `dogpile_backend_redis_advanced_hstore` | extends `dogpile_backend_redis_advanced` and allows for some specific hstore operations |
 
 There is a negligible performance hit in `dogpile_backend_redis_advanced_hstore`,
 as cache keys must be inspected to determine if they are an hstore or not -- and
@@ -23,7 +19,7 @@ there are some operations involved to coordinate values.
 purpose:
 --------
 
-Mike Bayer's dogpile.cache is an excellent package for general purpose development.
+Mike Bayer's `dogpile.cache` is an excellent package for general purpose development.
 
 The system offers 3 key features:
 
@@ -54,7 +50,7 @@ You may want a serializer that doesn't care about the expiry of cached data, so 
 | msgpack.packb(string)                 | \xa1a                     | \xabmellifluous                     |
 
 
-or you may want to 'fool' dogpile by manipulating what the cached is.  instead of using a python dict, of time and API version, you might just track the time but only to the second. 
+or you may want to fool `dogpile.cache` by manipulating what the cached is.  instead of using a python dict, of time and API version, you might just track the time but only to the second. 
 
 | type | example 1 | example 2 |
 | --- | --- | --- |
@@ -63,11 +59,11 @@ or you may want to 'fool' dogpile by manipulating what the cached is.  instead o
 | msgpack.packb(AltCachedValue(string)) | '\x92\xa1a\xceW\xafi\xe2' | '\x92\xabmellifluous\xceW\xafi\xe2' |
 
 
-This is how dogpile caches "a"
+This is how `dogpile.cache` stores "a"
 
 `cdogpile.cache.api\nCachedValue\np0\n(S'a'\np1\n(dp2\nS'ct'\np3\nF1471113698.76127\nsS'v'\np4\nI1\nstp5\nRp6\n.`
 
-This package lets us cache a raw string and trick dogpile into thinking it is timely
+This package lets us cache a raw string and trick `dogpile.cache` into thinking it is timely
 
 `a`
 
@@ -76,9 +72,9 @@ or include a simpler version fo the time, along with a different serializer
 `["a", 1471113698]`
 `\x92\xa1a\xceW\xafi\xe2`
 
-If you cache lots of big objects, dogpile's overhead is minimal -- but if you have a cache that works for mapping short bits of text, like ids to usernames (and vice-versa) you will see considerable savings.
+If you cache lots of big objects, `dogpile.cache`'s overhead is minimal -- but if you have a cache that works for mapping short bits of text, like ids to usernames (and vice-versa) you will see considerable savings.
 
-Another way to make Redis more efficient is to use hash storage
+Another way to make `Redis` more efficient is to use hash storage
 
 Let's say you have a lot of keys that look like this:
 
@@ -89,7 +85,7 @@ region.set("user-15|profile", z)
 region.set("user-15|username", z1)
 ```
 
-You could make Redis a bit more efficient by using hash storage, in which you have 1 key with multiple fields:
+You could make `Redis` a bit more efficient by using hash storage, in which you have 1 key with multiple fields:
 
 ```
 region.hset("user-15", {'posts': x,
@@ -101,7 +97,7 @@ region.hset("user-15", {'posts': x,
 
 Redis tends to operate much more efficiently in this situation (more below), but you can also save some bytes by not repeating the key prefix.  Instagram's engineering team has a great article on this (http://instagram-engineering.tumblr.com/post/12202313862/storing-hundreds-of-millions-of-simple-key-value)
 
-90% of `dogpile.cache` users who choose Redis will never need this package.  A decent number of other users with large datasets have been trying to squeeze every last bit of memory and performance out of their machines -- and this package is designed to facilitate that.
+90% of `dogpile.cache` users who choose `Redis` will never need this package.  A decent number of other users with large datasets have been trying to squeeze every last bit of memory and performance out of their machines -- and this package is designed to facilitate that.
 
 
 usage:
@@ -112,7 +108,7 @@ myfile.py
     # importing will register the plugins
     import dogpile_backend_redis_advanced
 
-then simply configure dogpile with `dogpile_backend_redis_advanced` or 
+then simply configure `dogpile.cache` with `dogpile_backend_redis_advanced` or 
 `dogpile_backend_redis_advanced_hstore` as the backend.
 
 
@@ -120,7 +116,7 @@ RedisAdvancedBackend
 --------------------
 
 Two new configuration options are offered to specify custom serializers via 
-`loads` and `dumps`.  The default selection is to use dogpile's choice of 
+`loads` and `dumps`.  The default selection is to use `dogpile.cache`'s choice of 
 `pickle`.
 
 This option was designed to support `msgpack` as the serializer:
@@ -142,19 +138,19 @@ This option was designed to support `msgpack` as the serializer:
         )
 
 
-One can also abuse/misuse dogpile and defer all cache expiry to Redis using this
+One can also abuse/misuse `dogpile.cache` and defer all cache expiry to `Redis` using this
 serializer hook.
 
-Dogpile doesn't cache your value as-is, but wraps it in a CachedValue object
+`dogpile.cache` doesn't cache your value as-is, but wraps it in a CachedValue object
 which contains an API version and a timestamp for the expiry.
 
-This format is necessary for most cache backends, but redis offers the ability
+This format is necessary for most cache backends, but `Redis` offers the ability
 to handle expiry in the cloud.  By using the slim msgpack format and only 
 storing the payload, you can drastically cut down the bytes needed to store this
 information.
 
 This approach SHOULD NOT BE USED by 99% of users.  However, if you do aggressive
-caching, this will allow you to leverage dogpile's excellent locking mechanism 
+caching, this will allow you to leverage `dogpile.cache`'s excellent locking mechanism 
 for handling read-through caching while slimming down your cache size and the
 traffic on-the-wire.  
 
@@ -207,15 +203,15 @@ This backend has a slight, negligible, overhead:
 redis_expiration_time_hash allows some extended management of expiry in Redis.  by default it is set to `None`
 
 * False - ignore hash expiry. (never set a TTL in redis)
-* None - set `redis_expiration_time` on new hash creation only.  this requires a check to the redis key before a set.
+* None - set `redis_expiration_time` on new hash creation only.  this requires a check to the `Redis` key before a set.
 * True - unconditionally set `redis_expiration_time` on every hash key set/update.
 
 Please note the following:
 
-* Redis manages the expiry of hashes on the key, making it global for all fields in the hash
-* Redis does not support setting a ttl on hashes while doing another operation.  ttl must be set via another request
-* if `redis_expiration_time_hash` is set to `True`, there will be 2 calls to the redis API for every key: `hset` or `hmset` then `expires`
-* if `redis_expiration_time_hash` is set to `None`, there will be 2-3 calls to the redis API for every key: `exists`, `hset` or `hmset`, and possibly `expires`
+* `Redis` manages the expiry of hashes on the key, making it global for all fields in the hash
+* `Redis` does not support setting a ttl on hashes while doing another operation.  ttl must be set via another request
+* if `redis_expiration_time_hash` is set to `True`, there will be 2 calls to the `Redis` API for every key: `hset` or `hmset` then `expires`
+* if `redis_expiration_time_hash` is set to `None`, there will be 2-3 calls to the `Redis` API for every key: `exists`, `hset` or `hmset`, and possibly `expires`
 
 
 Memory Savings and Suggested Usage
@@ -226,7 +222,7 @@ Redis is an in-memory datastore that offers persistence -- optimizing storage is
 Example Demo
 ~~~~~~~~~~~~~
 
-The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies of a single dataset.
+The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a `Redis` datastore with some possible strategies of a single dataset.
 
 It's worth looking at `demo.txt` to see how the different serializesr encode the data -- sample keys are pulled for each format.
 
@@ -261,8 +257,8 @@ Yes.
 
 The HSTORE has considerable savings due to 2 reasons:
 
-* Redis internally manages a hash much more effectively than keys.
-* Redis will only put an expiry on the keys (buckets), not the hash fields
+* `Redis` internally manages a hash much more effectively than keys.
+* `Redis` will only put an expiry on the keys (buckets), not the hash fields
 
 HSTORE ends up being a much tighter memory usage for this example set, as we're setting 100 fields in each key.  The savings would not be so severe if you were setting 5-10 fields per key
 
@@ -286,9 +282,9 @@ here are some benchmarks and links:
 Key Takeaways
 ~~~~~~~~~~~~~
 
-* this was surprising - while the differences are negligible on small datasets, using Redis to track expiry on long data-sets is generally not a good idea(!). dogpile tracks this data much more efficiently.  you can enable an LRU policy in Redis to aid in expiry.
+* this was surprising - while the differences are negligible on small datasets, using `Redis` to track expiry on long data-sets is generally not a good idea(!). `dogpile.cache` tracks this data much more efficiently.  you can enable an LRU policy in `Redis` to aid in expiry.
 * msgpack and json are usually fairly comparable in size [remember the assumption that msgpack is better for speed]
-* reformatting the dogpile metadata (replacing a `dict` an `int()` of the expiry) saves a lot of space under JSON when you have small payloads. the strings are a fraction of the size.
+* reformatting the `dogpile.cache` metadata (replacing a `dict` an `int()` of the expiry) saves a lot of space under JSON when you have small payloads. the strings are a fraction of the size.
 * msgpack is really good with nested data structures 
 
 The following payloads for `1` are strings:
@@ -304,21 +300,21 @@ So what should you use?
 
 There are several tradeoffs and concepts to consider:
 
-1. Do you want to access information outside of dogpile (in Python scripts, or even in another language)
+1. Do you want to access information outside of `dogpile.cache` (in Python scripts, or even in another language)
 2. Are you worried about the time to serialize/deserialize?  are you write-heavy or read-heavy?
-3. Do you want the TTL to be handled by Redis or within Python?
+3. Do you want the TTL to be handled by `Redis` or within Python?
 4. What are your expiry needs?  what do your keys look like?  there may not be any savings possible.  but if you have a lot of recycled prefixes, there could be.
 5. What do your values look like?  How many are there?
 
-This is test uses a particular dataset, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB Redis imprint to the 60-80MB range.
+This is test uses a particular dataset, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB `Redis` imprint to the 60-80MB range.
 
-The redis configuration file is also enclosed.  the above tests are done with redis compression turned on (which is why memory size fluctuates in the full demo reporting).   
+The `Redis` configuration file is also enclosed.  the above tests are done with `Redis` compression turned on (which is why memory size fluctuates in the full demo reporting).   
 
 
 To Do
 --------------------------------------
-I've been experimenting with handling the TTL within a hash bucket (instead of using the Redis or dogpile methods).
-This looks promising.  The rationale is that it is easier for Redis to get/set an extra field from the same hash, than it is to do separate calls to TTL/EXPIRES.  
+I've been experimenting with handling the TTL within a hash bucket (instead of using the `Redis` or `dogpile.cache` methods).
+This looks promising.  The rationale is that it is easier for `Redis` to get/set an extra field from the same hash, than it is to do separate calls to TTL/EXPIRES.  
 
 in code:
 
@@ -334,21 +330,21 @@ in code:
 Maturity
 --------------------------------------
 
-This package is pre-release.  I've been using these strategies in production via a custom fork of dogpile for several years, but am currently migrating it to a plugin.
+This package is pre-release.  I've been using these strategies in production via a custom fork of `dogpile.cache` for several years, but am currently migrating it to a plugin.
 
 
 Maintenance and Upstream Compatibility
 --------------------------------------
 
-Some files in /tests are entirely from dogpile as-is:
+Some files in /tests are entirely from `dogpile.cache` as-is:
 
 *   /tests/conftest.py
 *   /tests/cache/\__init__.py
 *   /tests/cache/\_fixtures.py
         
-They are versions from dogpile.cache 0.6.2
+They are versions from `dogpile.cache` 0.6.2
 
-The core file, `/cache/backends/redis_advanced.py` inherits from dogpile's `/cache/backends/redis.py`
+The core file, `/cache/backends/redis_advanced.py` inherits from `dogpile.cache`'s `/cache/backends/redis.py`
 
 
 Testing
@@ -356,7 +352,7 @@ Testing
 
 This ships with full tests.  
 
-Much of the core package and test fixtures are from dogpile.cache and copyright from that project, which is available under the MIT license.
+Much of the core package and test fixtures are from `dogpile.cache` and copyright from that project, which is available under the MIT license.
 
 Tests are handled through tox
 
@@ -378,4 +374,4 @@ Tests pass on the enclosed `redis.conf` file:
 License
 -------
 
-This project is available under the same MIT license as dogpile.
+This project is available under the same MIT license as `dogpile.cache`.
