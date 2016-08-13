@@ -202,8 +202,8 @@ Maintenance and Upstream Compatibility
 Some files in /tests are entirely from dogpile as-is:
 
 *   /tests/conftest.py
-*   /tests/cache/__init__.py
-*   /tests/cache/_fixtures.py
+*   /tests/cache/\__init__.py
+*   /tests/cache/\_fixtures.py
         
 They are versions from dogpile.cache 0.6.2
 
