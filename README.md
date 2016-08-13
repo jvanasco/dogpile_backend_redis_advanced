@@ -23,9 +23,10 @@ Mike Bayer's `dogpile.cache` is an excellent package for general purpose develop
 
 The system offers 3 key features:
 
-1. elegant read-through caching functionality
+1. elegant read-through caching functionality
 2. a locking mechanism that ensures only the first request of a cache-miss will create the resource (turning the rest into consumers of the first-requestor's creation)
 3. integrated cache expiry against time and library versions
+
 
 Unfortunately, the integrated cache expiry feature comes at a cost -- objects are wrapped into a tuple with some metadata and pickled before hitting the datastore.
 
