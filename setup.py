@@ -33,7 +33,7 @@ v = open(
 VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
-readme = os.path.join(os.path.dirname(__file__), 'README.rst')
+readme = os.path.join(os.path.dirname(__file__), 'README.md')
 
 setup(
     name='dogpile_backend_redis_advanced',

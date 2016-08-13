@@ -228,6 +228,11 @@ tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Te
 tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
 ``` 
 
+Tests pass on the enclosed `redis.conf` file:
+
+```/usr/local/Cellar/redis/3.0.7/redis-server ./redis-server--6379.conf```
+
+
 
 License
 -------
