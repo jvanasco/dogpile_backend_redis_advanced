@@ -35,24 +35,24 @@ Unfortunately, the integrated cache expiry feature comes at a cost -- objects ar
 
 The additional metadata or pickle format may not be needed or wanted.  Look how the size of 'a' grows by the time it becomes something passed off to Redis:
 
-| string              			| a           																									  |
-| pickle(string)      			| S'a'\np0\n.                 																					  |
-| CachedValue(string)           | ('a', {'ct': 1471113698.76127, 'v': 1}) 																		  |
+| string                        | a                                                                                                               |
+| pickle(string)                | S'a'\np0\n.                                                                                                     |
+| CachedValue(string)           | ('a', {'ct': 1471113698.76127, 'v': 1})                                                                         |
 | pickle(CachedValue(string) )  | cdogpile.cache.api\nCachedValue\np0\n(S'a'\np1\n(dp2\nS'ct'\np3\nF1471113698.76127\nsS'v'\np4\nI1\nstp5\nRp6\n. |
 
 By adding in hooks for custom serializers, this backend lets developers choose better ways to cache data.  
 
 You may want a serializer that doesn't care about the expiry of cached data, so just uses simpler strings. 
 
-| string              					| a     					| mellifluous     					  |
-| json.dumps(string)					| "a"   					| "mellifluous"   					  |
-| msgpack.packb(string)					| \xa1a						| \xabmellifluous 					  |
+| string                                | a                         | mellifluous                         |
+| json.dumps(string)                    | "a"                       | "mellifluous"                       |
+| msgpack.packb(string)                 | \xa1a                     | \xabmellifluous                     |
 
 
 or you may want to 'fool' dogpile by manipulating what the cached is.  instead of using a python dict, of time and API version, you might just track the time but only to the second. 
 
-| AltCachedValue(string)    	    	| ('a', 1471113698)     	| ('mellifluous', 1471113698)     	  |
-| json.dumps(AltCachedValue(string)) 	| '["a", 1471113698]' 		| '["mellifluous", 1471113698]' 	  |
+| AltCachedValue(string)                | ('a', 1471113698)         | ('mellifluous', 1471113698)         |
+| json.dumps(AltCachedValue(string))    | '["a", 1471113698]'       | '["mellifluous", 1471113698]'       |
 | msgpack.packb(AltCachedValue(string)) | '\x92\xa1a\xceW\xafi\xe2' | '\x92\xabmellifluous\xceW\xafi\xe2' |
 
 
@@ -86,10 +86,10 @@ You could make Redis a bit more efficient by using hash storage, in which you ha
 
 ```
 region.hset("user-15", {'posts': x,
-						'friends', y,
-						'profile', z,
-						'username', z1,
-						})
+                        'friends', y,
+                        'profile', z,
+                        'username', z1,
+                        })
 ```
 
 Redis tends to operate much more efficiently in this situation (more below), but you can also save some bytes by not repeating the key prefix.  Instagram's engineering team has a great article on this (http://instagram-engineering.tumblr.com/post/12202313862/storing-hundreds-of-millions-of-simple-key-value)
@@ -286,10 +286,10 @@ Key Takeaways
 
 The following payloads for `1` are strings:
 
-	region_json_local =        '[10, {"v": 1, "ct": 1471113698.76127}]'
-	region_json_local_int =    '[10, 1471113753]'
-	region_msgpack_local =     '\x92\n\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xe9\x97\x9a'
-	region_msgpack_local_int = '\x92\n\xceW\xafct'
+    region_json_local =        '[10, {"v": 1, "ct": 1471113698.76127}]'
+    region_json_local_int =    '[10, 1471113753]'
+    region_msgpack_local =     '\x92\n\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xe9\x97\x9a'
+    region_msgpack_local_int = '\x92\n\xceW\xafct'
 
 
 So what should you use?
