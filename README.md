@@ -19,6 +19,84 @@ There is a negligible performance hit in `dogpile_backend_redis_advanced_hstore`
 as cache keys must be inspected to determine if they are an hstore or not -- and
 there are some operations involved to coordinate values.
 
+
+purpose:
+--------
+
+Mike Bayer's dogpile.cache is an excellent package for general purpose development.
+
+The system offers 3 key features:
+
+1 elegant read-through caching functionality
+2 a locking mechanism that ensures only the first request of a cache-miss will create the resource (turning the rest into consumers of the first-requestor's creation)
+3 integrated cache expiry against time and library versions
+
+Unfortunately, the integrated cache expiry feature comes at a cost -- objects are wrapped into a tuple with some metadata and pickled before hitting the datastore.
+
+The additional metadata or pickle format may not be needed or wanted.  Look how the size of 'a' grows by the time it becomes something passed off to Redis:
+
+| string              			| a           																									  |
+| pickle(string)      			| S'a'\np0\n.                 																					  |
+| CachedValue(string)           | ('a', {'ct': 1471113698.76127, 'v': 1}) 																		  |
+| pickle(CachedValue(string) )  | cdogpile.cache.api\nCachedValue\np0\n(S'a'\np1\n(dp2\nS'ct'\np3\nF1471113698.76127\nsS'v'\np4\nI1\nstp5\nRp6\n. |
+
+By adding in hooks for custom serializers, this backend lets developers choose better ways to cache data.  
+
+You may want a serializer that doesn't care about the expiry of cached data, so just uses simpler strings. 
+
+| string              					| a     					| mellifluous     					  |
+| json.dumps(string)					| "a"   					| "mellifluous"   					  |
+| msgpack.packb(string)					| \xa1a						| \xabmellifluous 					  |
+
+
+or you may want to 'fool' dogpile by manipulating what the cached is.  instead of using a python dict, of time and API version, you might just track the time but only to the second. 
+
+| AltCachedValue(string)    	    	| ('a', 1471113698)     	| ('mellifluous', 1471113698)     	  |
+| json.dumps(AltCachedValue(string)) 	| '["a", 1471113698]' 		| '["mellifluous", 1471113698]' 	  |
+| msgpack.packb(AltCachedValue(string)) | '\x92\xa1a\xceW\xafi\xe2' | '\x92\xabmellifluous\xceW\xafi\xe2' |
+
+
+This is how dogpile caches "a"
+
+`cdogpile.cache.api\nCachedValue\np0\n(S'a'\np1\n(dp2\nS'ct'\np3\nF1471113698.76127\nsS'v'\np4\nI1\nstp5\nRp6\n.`
+
+This package lets us cache a raw string and trick dogpile into thinking it is timely
+
+`a`
+
+or include a simpler version fo the time, along with a different serializer
+
+`["a", 1471113698]`
+`\x92\xa1a\xceW\xafi\xe2`
+
+If you cache lots of big objects, dogpile's overhead is minimal -- but if you have a cache that works for mapping short bits of text, like ids to usernames (and vice-versa) you will see considerable savings.
+
+Another way to make Redis more efficient is to use hash storage
+
+Let's say you have a lot of keys that look like this:
+
+```
+region.set("user-15|posts", x)
+region.set("user-15|friends", y)
+region.set("user-15|profile", z)
+region.set("user-15|username", z1)
+```
+
+You could make Redis a bit more efficient by using hash storage, in which you have 1 key with multiple fields:
+
+```
+region.hset("user-15", {'posts': x,
+						'friends', y,
+						'profile', z,
+						'username', z1,
+						})
+```
+
+Redis tends to operate much more efficiently in this situation (more below), but you can also save some bytes by not repeating the key prefix.  Instagram's engineering team has a great article on this (http://instagram-engineering.tumblr.com/post/12202313862/storing-hundreds-of-millions-of-simple-key-value)
+
+90% of `dogpile.cache` users who choose Redis will never need this package.  A decent number of other users with large datasets have been trying to squeeze every last bit of memory and performance out of their machines -- and this package is designed to facilitate that.
+
+
 usage:
 ------
 
@@ -65,7 +143,7 @@ which contains an API version and a timestamp for the expiry.
 
 This format is necessary for most cache backends, but redis offers the ability
 to handle expiry in the cloud.  By using the slim msgpack format and only 
-storing the payload, we can drastically cut down the bytes needed to store this
+storing the payload, you can drastically cut down the bytes needed to store this
 information.
 
 This approach SHOULD NOT BE USED by 99% of users.  However, if you do aggressive
@@ -138,23 +216,39 @@ Memory Savings and Suggested Usage
 
 Redis is an in-memory datastore that offers persistence -- optimizing storage is incredibly important because the entire set must be held in-memory.
 
-The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies.
+Example Demo
+~~~~~~~~~~~~~
 
-| test                     | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                                 |
-| ------------------------ | ------------ | ------------ | -------- | ------------- | --------------- | --------------------------------------- |
-| region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | `dogpile.cache.redis`                   |
-| region_msgpack           | 188472048    | 179.74M      | 75.57%   | Y             | Y               | `dogpile_backend_redis_advanced`        |
-| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | `dogpile.cache.redis`                   |
-| region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | `dogpile_backend_redis_advanced`        |
-| region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | `dogpile_backend_redis_advanced`        |
-| region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | `dogpile_backend_redis_advanced`        |
-| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y             | -               | `dogpile_backend_redis_advanced_hstore` |
+The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a Redis datastore with some possible strategies of a single dataset.
+
+It's worth looking at `demo.txt` to see how the different serializesr encode the data -- sample keys are pulled for each format.
+
+| test                     | memory bytes | memory human | relative | ttl on redis? | ttl in dogpile? | backend                                 | encoder |
+| ------------------------ | ------------ | ------------ | -------- | ------------- | --------------- | --------------------------------------- | ------- |
+| region_redis             | 249399504    | 237.85M      | 0%       | Y             | Y               | `dogpile.cache.redis`                   | pickle  |
+| region_json              | 222924496    | 212.60M      | 89.38%   | Y             | Y               | `dogpile_backend_redis_advanced`        | json    |
+| region_msgpack           | 188472048    | 179.74M      | 75.57%   | Y             | Y               | `dogpile_backend_redis_advanced`        | msgpack |
+| region_redis_local       | 181501200    | 173.09M      | 72.78%   | -             | Y               | `dogpile.cache.redis`                   | pickle  |
+| region_json_raw          | 171554880    | 163.61M      | 68.79%   | Y             | -               | `dogpile_backend_redis_advanced`        | json    |
+| region_msgpack_raw       | 170765872    | 162.86M      | 68.47%   | Y             | -               | `dogpile_backend_redis_advanced`        | msgpack |
+| region_json_local        | 162612752    | 155.08M      | 65.20%   | -             | Y               | `dogpile_backend_redis_advanced`        | json    |
+| region_json_local_int    | 128648576    | 122.69M      | 57.71%   | -             | Y, `int(time)`  | `dogpile_backend_redis_advanced`        | json    |
+| region_msgpack_local     | 128160048    | 122.22M      | 51.39%   | -             | Y               | `dogpile_backend_redis_advanced`        | msgpack |
+| region_msgpack_local_int | 126938576    | 121.06M      | 50.89%   | -             | Y, `int(time)`  | `dogpile_backend_redis_advanced`        | msgpack |
+| region_json_raw_local    | 111241280    | 106.09M      | 44.60%   | -             | -               | `dogpile_backend_redis_advanced`        | json    |
+| region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | `dogpile_backend_redis_advanced`        | msgpack |
+| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y, only keys  | -               | `dogpile_backend_redis_advanced_hstore` | msgpack |
+| region_json_raw_hash     | 24836160     | 23.69M       |  9.96%   | Y, only keys  | -               | `dogpile_backend_redis_advanced_hstore` | json    |
+
+Notes:
 
 * the `_local` variants do not set a TTL on Redis
 * the `_raw` variants strip out the dogpile CachedValue wrapper and only store the payload
-* the `msgpack` variants use msgpack instead of pickle 
+* the `_msgpack` variants use msgpack instead of pickle 
+* the `_json` variants use json instead of pickle 
+* the `_int` variant applies int() to the dogpile timestamp, dropping a few bytes per entry
 
-Wait WHAT? LOOK AT `region_msgpack_raw_hash` - that's a HUGE savings!
+Wait WHAT? LOOK AT `region_msgpack_raw_hash` and `region_json_raw_hash` - that's a HUGE savings!
 
 Yes.
 
@@ -163,21 +257,55 @@ The HSTORE has considerable savings due to 2 reasons:
 * Redis internally manages a hash much more effectively than keys.
 * Redis will only put an expiry on the keys (buckets), not the hash fields
 
-It ends up being a much tighter memory usage for this example set, as we're setting 100 fields in each key.
+HSTORE ends up being a much tighter memory usage for this example set, as we're setting 100 fields in each key.  The savings would not be so severe if you were setting 5-10 fields per key
 
-Note that `region_msgpack_raw_local` should not be used.  it has no expiry - it's just shown for reference.
+Note that `region_msgpack_raw_local` and `region_json_raw_local` should not be used unless you're running a LRU -- they have no expiry.
+
+Assumptions
+~~~~~~~~~~~~~
+
+This demo is assuming a few things that are not tested here (but there are plenty of benchmarks on the internet showing this):
+
+msgpack is the fastest encoder for serializing and deserializing data.
+json outperforms cpickle on serializing; cpickle outperforms json on deserializing data.
+
+here are some benchmarks and links:
+
+* https://gist.github.com/justinfx/3174062
+* https://gist.github.com/cactus/4073643
+* http://www.benfrederickson.com/dont-pickle-your-data/
+
+
+Key Takeaways
+~~~~~~~~~~~~~
+
+* this was surprising - while the differences are negligible on small datasets, using Redis to track expiry on long data-sets is generally not a good idea(!). dogpile tracks this data much more efficiently.  you can enable an LRU policy in Redis to aid in expiry.
+* msgpack and json are usually fairly comparable in size [remember the assumption that msgpack is better for speed]
+* reformatting the dogpile metadata (replacing a `dict` an `int()` of the expiry) saves a lot of space under JSON when you have small payloads. the strings are a fraction of the size.
+* msgpack is really good with nested data structures 
+
+The following payloads for `1` are strings:
+
+	region_json_local =        '[10, {"v": 1, "ct": 1471113698.76127}]'
+	region_json_local_int =    '[10, 1471113753]'
+	region_msgpack_local =     '\x92\n\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xe9\x97\x9a'
+	region_msgpack_local_int = '\x92\n\xceW\xafct'
+
 
 So what should you use?
+~~~~~~~~~~~~~~~~~~~~~~~
 
 There are several tradeoffs and concepts to consider:
 
 1. Do you want to access information outside of dogpile (in Python scripts, or even in another language)
-2. Do you want the TTL to be handled by Redis or within Python?
-3. What are your expiry needs?  what do your keys look like?  there may not be any savings possible.  but if you have a lot of recycled prefixes, there could be.
+2. Are you worried about the time to serialize/deserialize?  are you write-heavy or read-heavy?
+3. Do you want the TTL to be handled by Redis or within Python?
+4. What are your expiry needs?  what do your keys look like?  there may not be any savings possible.  but if you have a lot of recycled prefixes, there could be.
+5. What do your values look like?  How many are there?
 
-This is a structured test, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB Redis imprint to the 60-80MB range.
+This is test uses a particular dataset, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB Redis imprint to the 60-80MB range.
 
-The redis configuration file is also enclosed.  the above tests are done with redis compression turned on (which is why memory size fluctuates in the full demo report).   
+The redis configuration file is also enclosed.  the above tests are done with redis compression turned on (which is why memory size fluctuates in the full demo reporting).   
 
 
 To Do
@@ -194,6 +322,12 @@ in code:
                     'expires': time.time() + 3600,
                     }
 ```
+
+
+Maturity
+--------------------------------------
+
+This package is pre-release.  I've been using these strategies in production via a custom fork of dogpile for several years, but am currently migrating it to a plugin.
 
 
 Maintenance and Upstream Compatibility

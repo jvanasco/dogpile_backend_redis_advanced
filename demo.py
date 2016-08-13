@@ -25,6 +25,7 @@ from dogpile.cache.api import CachedValue
 from dogpile.cache.region import value_version
 import psutil
 import redis
+import json
 
 
 import sys
@@ -54,25 +55,112 @@ REGIONS = {}
 
 # ==============================================================================
 
+class SerializerMsgpackRaw(object):
+    ''''this is implemented as an object simply for code organization'''
 
-def msgpack_loads_raw(value):
-    ''''
-    we need to unpack the value and stash it into a CachedValue
-    '''
-    value = msgpack.unpackb(value, use_list=False)
-    return CachedValue(
-        value,
-        {
-            "ct": time.time(),
-            "v": value_version
-        })
+    @classmethod
+    def dumps(cls, value):
+        ''''strip out the payload before packing'''
+        if isinstance(value, CachedValue):
+            value = value.payload
+        value = msgpack.packb(value)
+        return value
 
-def msgpack_dumps_raw(value):
-    if isinstance(value, CachedValue):
-        value = value.payload
-    value = msgpack.packb(value)
-    return value
-    
+    @classmethod
+    def loads(cls, value):
+        ''''unpack the value and stash it into a CachedValue'''
+        value = msgpack.unpackb(value, use_list=False)
+        return CachedValue(value,
+                           {"ct": time.time(),
+                            "v": value_version
+                            })
+
+
+class SerializerMsgpackInt(object):
+    ''''this is implemented as an object simply for code organization'''
+
+    @classmethod
+    def dumps(cls, value):
+        ''''
+        strip out the payload before packing, 
+        save the timestamp, but convert it to an int() first
+        
+        why?
+        redis has precision on seconds, not microseconds
+            1471111902.170488
+            1471111902
+        '''
+        if isinstance(value, CachedValue):
+            value = (value.payload, int(value.metadata['ct']))
+        value = msgpack.packb(value)
+        return value
+
+    @classmethod
+    def loads(cls, value):
+        value = msgpack.unpackb(value, use_list=False)
+        return CachedValue(value[0],
+                           {"ct": value[1],
+                            "v": value_version
+                            })
+                            
+
+class SerializerJson(object):
+    ''''this is implemented as an object simply for code organization'''
+
+    @classmethod
+    def dumps(cls, value):
+        value = json.dumps(value)
+        return value
+
+    @classmethod
+    def loads(cls, value):
+        ''''unpack the value and stash it into a CachedValue'''
+        value = json.loads(value)
+        return CachedValue(value)
+
+
+class SerializerJsonRaw(object):
+    ''''this is implemented as an object simply for code organization'''
+
+    @classmethod
+    def dumps(cls, value):
+        ''''strip out the payload before packing'''
+        if isinstance(value, CachedValue):
+            value = value.payload
+        value = json.dumps(value)
+        return value
+
+    @classmethod
+    def loads(cls, value):
+        ''''unpack the value and stash it into a CachedValue'''
+        value = json.loads(value)
+        return CachedValue(value,
+                           {"ct": time.time(),
+                            "v": value_version
+                            })
+
+
+class SerializerJsonInt(object):
+    ''''this is implemented as an object simply for code organization'''
+
+    @classmethod
+    def dumps(cls, value):
+        ''''
+        see SerializerMsgpackInt
+        '''
+        if isinstance(value, CachedValue):
+            value = (value.payload, int(value.metadata['ct']))
+        value = json.dumps(value)
+        return value
+
+    @classmethod
+    def loads(cls, value):
+        value = json.loads(value)
+        return CachedValue(value[0],
+                           {"ct": value[1],
+                            "v": value_version
+                            })
+
     
 def msgpack_loads(value):
     value = msgpack.unpackb(value, use_list=False)
@@ -132,6 +220,20 @@ def initialize_dogpile():
             'db': 0,
             'loads': msgpack_loads,
             'dumps': msgpack.packb,
+            'redis_expiration_time': None,
+        }
+    )
+
+    REGIONS['region_msgpack_local_int'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerMsgpackInt.loads,
+            'dumps': SerializerMsgpackInt.dumps,
+            'redis_expiration_time': None,
         }
     )
 
@@ -142,8 +244,8 @@ def initialize_dogpile():
             'host': REDIS_HOST,
             'port': REDIS_PORT,
             'db': 0,
-            'loads': msgpack_loads_raw,
-            'dumps': msgpack_dumps_raw,
+            'loads': SerializerMsgpackRaw.loads,
+            'dumps': SerializerMsgpackRaw.dumps,
             'redis_expiration_time': 3600,
         }
     )
@@ -155,8 +257,8 @@ def initialize_dogpile():
             'host': REDIS_HOST,
             'port': REDIS_PORT,
             'db': 0,
-            'loads': msgpack_loads_raw,
-            'dumps': msgpack_dumps_raw,
+            'loads': SerializerMsgpackRaw.loads,
+            'dumps': SerializerMsgpackRaw.dumps,
         }
     )
 
@@ -167,8 +269,87 @@ def initialize_dogpile():
             'host': REDIS_HOST,
             'port': REDIS_PORT,
             'db': 0,
-            'loads': msgpack_loads_raw,
-            'dumps': msgpack_dumps_raw,
+            'loads': SerializerMsgpackRaw.loads,
+            'dumps': SerializerMsgpackRaw.dumps,
+            'redis_expiration_time': 3600,
+            'redis_expiration_time_hash': None,
+        }
+    )
+
+    REGIONS['region_json'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJson.loads,
+            'dumps': SerializerJson.dumps,
+            'redis_expiration_time': 3600,
+        }
+    )
+
+    REGIONS['region_json_local'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJson.loads,
+            'dumps': SerializerJson.dumps,
+            'redis_expiration_time': None,
+        }
+    )
+
+    REGIONS['region_json_local_int'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJsonInt.loads,
+            'dumps': SerializerJsonInt.dumps,
+            'redis_expiration_time': None,
+        }
+    )
+
+    REGIONS['region_json_raw'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJsonRaw.loads,
+            'dumps': SerializerJsonRaw.dumps,
+            'redis_expiration_time': 3600,
+        }
+    )
+
+    REGIONS['region_json_raw_local'] = make_region().configure(
+        'dogpile_backend_redis_advanced',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJsonRaw.loads,
+            'dumps': SerializerJsonRaw.dumps,
+            'redis_expiration_time': None,
+        }
+    )
+
+    REGIONS['region_json_raw_hash'] = make_region().configure(
+        'dogpile_backend_redis_advanced_hstore',
+        expiration_time = 3600,
+        arguments = {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'loads': SerializerJsonRaw.loads,
+            'dumps': SerializerJsonRaw.dumps,
             'redis_expiration_time': 3600,
             'redis_expiration_time_hash': None,
         }
@@ -208,7 +389,7 @@ def prime_region(region_name):
                 region.set("%s|%s" % (pfx, i), pfx)
     """
     region = REGIONS[region_name]
-    if region_name == 'region_msgpack_raw_hash':
+    if '_hash' in region_name:
         for i in range(0, max_a, 100):
             mapping = {}
             for j in range(0, 100):
@@ -252,6 +433,7 @@ def prime_region(region_name):
                 region.set_multi(mapping)
 
 
+# these statistics will be copied into our payload from the active redis server's info,
 info_tracked_keys = ('used_memory',
                      'used_memory_human',
                      'used_memory_rss',
@@ -260,6 +442,7 @@ info_tracked_keys = ('used_memory',
                      'used_memory_lua',
                      )
 
+# these redis keys will be copied into our payload from the active redis server
 redis_tracked_keys = ['1',
                       '100',
                       '1000',
@@ -267,7 +450,6 @@ redis_tracked_keys = ['1',
                       "%s|%s" % ('qkknasdkk', 999),
                       "fizzbuzz",  # will only appear in hashed store
                       ]
-
 redis_tracked_keys.append(max_a/2)
 redis_tracked_keys.append("%s|%s" % ('fizzbuzz', (max_b/2)))
 redis_tracked_keys.append("%s|%s" % ('qkknasdkk', (max_b/2)))
@@ -281,24 +463,34 @@ if __name__ == '__main__' :
         try:
             _info = redis_connection.info()
             pid = _info['process_id']
-            print "redis is open, must kill %s" % pid
-            redis_connection.flush_db()  # just clear it!
+            print "`redis-server` is open, must kill %s" % pid
+            redis_connection.flushdb()  # just clear it!
             _old_process = psutil.Process(pid)
             _old_process.kill()
         except redis.exceptions.ConnectionError, e:
             pass
 
-    print "initialize test -- killing redis if open"
+    print "initialize test -- killing `redis-server` if open"
     kill_redis()
     
-    regions = ('region_redis', 
-               'region_redis_local',
-               'region_msgpack',
-               'region_msgpack_local',
-               'region_msgpack_raw',
-               'region_msgpack_raw_local',
-               'region_msgpack_raw_hash',
-               )
+    regions = (
+        'region_redis', 
+        'region_redis_local',
+
+        'region_msgpack',
+        'region_msgpack_local',
+        'region_msgpack_local_int',
+        'region_msgpack_raw',
+        'region_msgpack_raw_local',
+        'region_msgpack_raw_hash',
+
+        'region_json',
+        'region_json_local',
+        'region_json_local_int',
+        'region_json_raw',
+        'region_json_raw_local',
+        'region_json_raw_hash',
+    )
 
     test_results = {}
     redis_server = None
@@ -350,12 +542,12 @@ if __name__ == '__main__' :
         # clear this out, so it doesn't persist
         redis_connection.flushdb()        
 
-        print "4. killing redis"
+        print "4. killing `redis-server`"
         print "killing process %s" % redis_server.pid
         _old_process = psutil.Process(redis_server.pid)
         _old_process.kill()
 
-    print "cleanup.  kill redis?"    
+    print "demo cleanup.  kill `redis-server`?"    
     kill_redis()
 
     pprint.pprint(test_results)
