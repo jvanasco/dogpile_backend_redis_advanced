@@ -35,6 +35,9 @@ Unfortunately, the integrated cache expiry feature comes at a cost -- objects ar
 
 The additional metadata or pickle format may not be needed or wanted.  Look how the size of 'a' grows by the time it becomes something passed off to Redis:
 
+
+| type | example |
+| --- | --- |
 | string                        | a                                                                                                               |
 | pickle(string)                | S'a'\np0\n.                                                                                                     |
 | CachedValue(string)           | ('a', {'ct': 1471113698.76127, 'v': 1})                                                                         |
@@ -44,6 +47,8 @@ By adding in hooks for custom serializers, this backend lets developers choose b
 
 You may want a serializer that doesn't care about the expiry of cached data, so just uses simpler strings. 
 
+| type | example 1 | example 2 |
+| --- | --- | --- |
 | string                                | a                         | mellifluous                         |
 | json.dumps(string)                    | "a"                       | "mellifluous"                       |
 | msgpack.packb(string)                 | \xa1a                     | \xabmellifluous                     |
@@ -51,6 +56,8 @@ You may want a serializer that doesn't care about the expiry of cached data, so 
 
 or you may want to 'fool' dogpile by manipulating what the cached is.  instead of using a python dict, of time and API version, you might just track the time but only to the second. 
 
+| type | example 1 | example 2 |
+| --- | --- | --- |
 | AltCachedValue(string)                | ('a', 1471113698)         | ('mellifluous', 1471113698)         |
 | json.dumps(AltCachedValue(string))    | '["a", 1471113698]'       | '["mellifluous", 1471113698]'       |
 | msgpack.packb(AltCachedValue(string)) | '\x92\xa1a\xceW\xafi\xe2' | '\x92\xabmellifluous\xceW\xafi\xe2' |
