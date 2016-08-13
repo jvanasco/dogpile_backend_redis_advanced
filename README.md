@@ -189,7 +189,7 @@ traffic on-the-wire.
 RedisAdvancedHstoreBackend
 --------------------------
 
-This backend extends RedisAdvancedBackend with drop-in support for Hash storage 
+This backend extends *RedisAdvancedBackend* with drop-in support for Hash storage 
 under Redis.
 
 * if key names are tuples, they will be treated as hash operations on Redis.
@@ -197,15 +197,15 @@ under Redis.
 
 This backend has a slight, negligible, overhead:
 
-* all key operations (get/get_multi/set/set_multi/delete) require an inspection of keys.
-* get_multi requires the order of keys to be tracked, and results from multiple get/hget operations are then correlated
-* set_multi requires the mapping to be analyzed and bucketed into different hmsets
+* all key operations (`get`/`get_multi`/`set`/`set_multi`/`delete`) require an inspection of keys.
+* `get_multi` requires the order of keys to be tracked, and results from multiple `get`/`hget` operations are then correlated
+* `set_multi` requires the mapping to be analyzed and bucketed into different hmsets
 
-redis_expiration_time_hash allows some extended management of expiry in Redis.  by default it is set to `None`
+`redis_expiration_time_hash` allows some extended management of expiry in Redis.  by default it is set to `None`
 
-* False - ignore hash expiry. (never set a TTL in redis)
-* None - set `redis_expiration_time` on new hash creation only.  this requires a check to the `Redis` key before a set.
-* True - unconditionally set `redis_expiration_time` on every hash key set/update.
+* `False` - ignore hash expiry. (never set a TTL in redis)
+* `None` - set `redis_expiration_time` on new hash creation only.  this requires a check to the `Redis` key before a set.
+* `True` - unconditionally set `redis_expiration_time` on every hash key set/update.
 
 Please note the following:
 
