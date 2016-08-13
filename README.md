@@ -220,8 +220,7 @@ Memory Savings and Suggested Usage
 
 Redis is an in-memory datastore that offers persistence -- optimizing storage is incredibly important because the entire set must be held in-memory.
 
-Example Demo
-~~~~~~~~~~~~~
+### Example Demo
 
 The attached `demo.py` (results in `demo.txt`) shows some potential approaches to caching and hashing by priming a **Redis** datastore with some possible strategies of a single dataset.
 
@@ -265,8 +264,7 @@ HSTORE ends up being a much tighter memory usage for this example set, as we're 
 
 Note that `region_msgpack_raw_local` and `region_json_raw_local` should not be used unless you're running a LRU -- they have no expiry.
 
-Assumptions
-~~~~~~~~~~~~~
+### Assumptions
 
 This demo is assuming a few things that are not tested here (but there are plenty of benchmarks on the internet showing this):
 
@@ -280,8 +278,7 @@ here are some benchmarks and links:
 * http://www.benfrederickson.com/dont-pickle-your-data/
 
 
-Key Takeaways
-~~~~~~~~~~~~~
+### Key Takeaways
 
 * this was surprising - while the differences are negligible on small datasets, using **Redis** to track expiry on long data-sets is generally not a good idea(!). **dogpile.cache** tracks this data much more efficiently.  you can enable an LRU policy in **Redis** to aid in expiry.
 * msgpack and json are usually fairly comparable in size [remember the assumption that msgpack is better for speed]
@@ -296,8 +293,7 @@ The following payloads for `1` are strings:
     region_msgpack_local_int = '\x92\n\xceW\xafct'
 
 
-So what should you use?
-~~~~~~~~~~~~~~~~~~~~~~~
+### So what should you use?
 
 There are several tradeoffs and concepts to consider:
 
