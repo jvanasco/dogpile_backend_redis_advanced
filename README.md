@@ -277,6 +277,15 @@ here are some benchmarks and links:
 * https://gist.github.com/cactus/4073643
 * http://www.benfrederickson.com/dont-pickle-your-data/
 
+#### Caveats
+
+In the examples above, we deal with (de)serializing simple, native, datatypes: `string`, `int`, `bool`, `list`, `dict`, `tuple`.  For these datatypes, msgpack is both the smallest datastore and the fastest performer.
+
+If you need to store more complex types, you will need to provide a custom encoder/decoder and will likely suffer a performance hit on the speed of (de)serialization.  Unfortunately, the more complex data types that require custom encoding/decoding include standard `datetime` objects, which can be annoying.
+
+The file `custom_serializer.py` shows an example class for handling (de)serialization -- `MsgpackSerializer`.  Some common `datetime` formats are supported; they are encoded as a specially formatted dict, and decoded correspondingly.  A few tricks are used to shave off time and make it roughly comparable to the speed of pickle.
+
+
 
 ### Key Takeaways
 
@@ -322,6 +331,8 @@ in code:
                     'expires': time.time() + 3600,
                     }
 ```
+
+I've also been experimenting with blessing the result into a subclass of `dict` that would do the object pair decoding lazily as-needed.  That would speed up most use cases.
 
 
 Maturity
