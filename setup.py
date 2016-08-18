@@ -34,12 +34,17 @@ VERSION = re.compile(r".*__version__ = '(.*?)'", re.S).match(v.read()).group(1)
 v.close()
 
 readme = os.path.join(os.path.dirname(__file__), 'README.md')
+long_description = "Advanced redis plugins for dogpile.cache"
+try:
+    open(readme).read()
+except:
+    pass
 
 setup(
     name='dogpile_backend_redis_advanced',
     version=VERSION,
     description="Advanced redis plugins for dogpile.cache.",
-    long_description=open(readme).read(),
+    long_description=long_description,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',

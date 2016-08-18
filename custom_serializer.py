@@ -37,7 +37,7 @@ class MsgpackSerializer(object):
         elif b'__date__' in obj:
             # is is MUCH faster to use date() than strptime
             # obj = datetime.datetime.strptime(obj['0'], "%Y%m%d").date()
-            d = obj['0']
+            d = obj["0"]
             obj = datetime.date(int(d[:4]), int(d[4:6]), int(d[6:8]))
         elif b'__timedelta__' in obj:
             obj = datetime.timedelta(seconds=obj['0'])
@@ -68,8 +68,7 @@ class MsgpackSerializer(object):
 
     @classmethod
     def loads(cls, payload):
-        # it would be slightly faster to use tuples instead of lists
-        v = msgpack.unpackb(payload, object_hook=cls.decoder, encoding="utf-8", use_list=True)
+        v = msgpack.unpackb(payload, object_hook=cls.decoder, encoding="utf-8")
         return v
 
 

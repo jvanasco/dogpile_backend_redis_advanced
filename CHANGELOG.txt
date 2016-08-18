@@ -1,0 +1,5 @@
+v 0.0.2
+	packaging fix
+	
+v 0.0.1
+	initial release
