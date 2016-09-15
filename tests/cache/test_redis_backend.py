@@ -689,3 +689,190 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
             time.sleep(1)
 
         backend.delete_multi(keys_mixed)
+
+
+class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
+    backend = 'dogpile_backend_redis_advanced_hstore'
+    config_args = {
+        "arguments": {
+            'host': REDIS_HOST,
+            'port': REDIS_PORT,
+            'db': 0,
+            'distributed_lock': True,
+            'lock_prefix': '_lk-',
+        }
+    }
+
+    def test_prefix(self):
+        """
+        test the lock being set to the desired prefix by querying for a
+        value of the prefix.  since the value is not managed as a normal key,
+        the test is performed using the backend client
+        """
+        reg = self._region()
+        key = "creator"
+        value = "creator value"
+
+        def creator():
+            lock_key = self.config_args['arguments']['lock_prefix'] + key
+            locked = reg.backend.client.get(lock_key)
+            assert locked and locked is not NO_VALUE
+            return value
+
+        assert reg.get_or_create(key, creator) == value
+
+        # reset the region...
+        reg.delete(key)
+
+
+class RedisDistributedLockProxy(object):
+    """base lock wrapper for testing
+    """
+    mutex = None
+    def __init__(self, mutex):
+        self.mutex = mutex
+    def acquire(self, *_args, **_kwargs):
+        return self.mutex.acquire(*_args, **_kwargs)
+    def release(self):
+        raise NotImplementedError()
+
+
+class RedisDistributedLockProxySilent(RedisDistributedLockProxy):
+    """example lock wrapper
+    this will silently pass if a LockError is encountered
+    """
+    def release(self):
+        # defer imports until backend is used
+        global redis
+        import redis  # noqa
+        try:
+            self.mutex.release()
+        except redis.exceptions.LockError, e:
+            # log.debug("safe lock timeout")
+            pass
+        except Exception as e:
+            raise
+
+
+class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
+    """example lock wrapper
+    this will re-raise LockErrors but give a hook to log or retry
+    """
+    def release(self):
+        # defer imports until backend is used
+        global redis
+        import redis  # noqa
+        try:
+            self.mutex.release()
+        except redis.exceptions.LockError, e:
+            raise
+        except Exception as e:
+            raise
+
+
+class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
+    backend = 'dogpile_backend_redis_advanced_hstore'
+    config_args = {
+        "arguments": {
+            'host': '127.0.0.1',
+            'port': 6379,
+            'db': 0,
+            'distributed_lock': True,
+            'lock_class': RedisDistributedLockProxySilent,
+            'lock_timeout': 1,
+            'redis_expiration_time': 1,
+        }
+    }
+
+    def test_pass_lock_timeout__single(self):
+        reg = self._region()
+
+        # ensure this works instantly.
+        def creator():
+            return "creator value"
+        assert reg.get_or_create("creator", creator) == "creator value"
+
+        # reset the region...
+        reg.delete("creator")
+
+        # can this work on a timeout?
+        # sleep for 1 second longer than the timeout, so redis must expire
+        def creator_sleep():
+            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            return "creator_sleep value"
+
+        assert reg.get_or_create("creator_sleep", creator_sleep) == \
+            "creator_sleep value"
+
+        # no need reset, the `creator_sleep` is timed out
+
+    def test_pass_lock_timeout__multi(self):
+        reg = self._region()
+
+        def _creator_multi(*_creator_keys):
+            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            # rval is an ordered list
+            return [int(_k[-1]) for _k in _creator_keys]
+
+        _values_expected = [1, 2, 3]
+        _keys = [str("creator_sleep_multi-%s" % i)
+                 for i in _values_expected
+                 ]
+        _values = reg.get_or_create_multi(_keys, _creator_multi)
+        assert _values == _values_expected
+
+        # reset the region...
+        for _k in _keys:
+            reg.delete(_k)
+
+
+class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
+    backend = 'dogpile_backend_redis_advanced_hstore'
+    config_args = {
+        "arguments": {
+            'host': '127.0.0.1',
+            'port': 6379,
+            'db': 0,
+            'distributed_lock': True,
+            'lock_class': RedisDistributedLockProxyFatal,
+            'lock_timeout': 1,
+            'redis_expiration_time': 1,
+        }
+    }
+
+    def test_pass_lock_timeout__single(self):
+        reg = self._region()
+
+        # ensure this works instantly.
+        def creator():
+            return "creator value"
+        assert reg.get_or_create("creator", creator) == "creator value"
+
+        # can this work on a timeout?
+        # sleep for 1 second longer than the timeout, so redis must expire
+        def creator_sleep():
+            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            return "creator_sleep value"
+        try:
+            result = reg.get_or_create("creator_sleep", creator_sleep)
+            raise ValueError("expected an error!")
+        except redis.exceptions.LockError, e:
+            pass
+
+    def test_pass_lock_timeout__multi(self):
+        reg = self._region()
+
+        def _creator_multi(*_creator_keys):
+            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            # rval is an ordered list
+            return [int(_k[-1]) for _k in _creator_keys]
+
+        _values_expected = [1, 2, 3]
+        _keys = [str("creator_sleep_multi-%s" % i)
+                 for i in _values_expected
+                 ]
+        try:
+            _values = reg.get_or_create_multi(_keys, _creator_multi)
+            raise ValueError("expected an error!")
+        except redis.exceptions.LockError, e:
+            pass

@@ -1,3 +1,7 @@
+v 0.1.0
+	added `lock_class`
+	added `lock_prefix`
+
 v 0.0.2
 	packaging fix
 	

@@ -67,7 +67,53 @@ class RedisAdvancedBackend(RedisBackend):
                 'distributed_lock': True
                 }
         )
-    """
+
+
+    :param loads: function that implements an interface like `pickle.loads`.
+     Defaults to ``pickle.loads``
+     .. versionadded:: 0.0.1
+
+    :param dumps: function that implements an interface like `pickle.dumps`
+     Defaults to ``lambda v: pickle.dumps(v, picke.HIGHEST_PROTOCOL)``
+     .. versionadded:: 0.0.1
+
+    :param lock_class: class, class to wrap a lock mutex in.  A variety of
+     factors can cause the distributed lock to disappear or become invalidated
+     after a PUT and before a RELEASE.  By wrapping a mutex in a custom proxy
+     class, developers can better track this situation and suppress these errors
+     (if wanted) to allow for dogpile's caching decorators to function properly.
+
+            class LockProxy(object):
+                '''
+                The proxy must accept a ``mutex`` on ``__init__``, and 
+                support ``acquire`` and ``release`` methods
+                '''
+                mutex = None
+    
+                def __init__(self, mutex):
+                    self.mutex = mutex
+
+                def acquire(self, *_args, **_kwargs):
+                    '''Acquire the mutex lock'''
+                    return self.mutex.acquire(*_args, **_kwargs)
+
+                def release(self):
+                    '''Release the mutex lock'''
+                    try:
+                        self.mutex.release()
+                    except redis.exceptions.LockError, e:
+                        # handle the error
+                        pass
+                    except Exception as e:
+                        raise
+
+     .. versionadded:: 0.1.0
+
+    :param lock_prefix: string, prefix used for generating locks. By default
+     the backend uses `_lock`.
+     .. versionadded:: 0.1.0
+
+     """
 
     def __init__(self, arguments):
         arguments = arguments.copy()
@@ -77,6 +123,18 @@ class RedisAdvancedBackend(RedisBackend):
         if self.dumps is None:
             self.dumps = lambda v: pickle.dumps(v,
                                                 pickle.HIGHEST_PROTOCOL)
+        self.lock_class = arguments.pop('lock_class', None)
+        self.lock_prefix = "%s{0}" % arguments.pop('lock_prefix', '_lock')
+
+    def get_mutex(self, key):
+        if self.distributed_lock:
+            _key = u(self.lock_prefix).format(key)
+            _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
+            if self.lock_class:
+                return self.lock_class(_mutex)
+            return _mutex
+        else:
+             return None
 
     def get(self, key):
         value = self.client.get(key)
@@ -170,8 +228,11 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             key = ",".join(key)
         if self.distributed_lock:
             # redis.py command: `lock(name, timeout=None, sleep=0.1)`
-            return self.client.lock(u('_lock{0}').format(key),
-                                    self.lock_timeout, self.lock_sleep)
+            _key = u(self.lock_prefix).format(key)
+            _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
+            if self.lock_class:
+                return self.lock_class(_mutex)
+            return _mutex
         else:
             return None
 

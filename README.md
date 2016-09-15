@@ -15,6 +15,11 @@ There is a negligible performance hit in `dogpile_backend_redis_advanced_hstore`
 as cache keys must be inspected to determine if they are an hstore or not -- and
 there are some operations involved to coordinate values.
 
+Additionally, some behavior is changed:
+
+* The constructor now accepts a ``lock_class`` argument, which can be used to wrap a mutex and alter how releases are handled.  This can be necessary if you have a distributed lock and timeout or flush issues (via LRU or otherwise).  A lock disappearing in Redis will raise a fatal exception under the standard redis backend.
+
+* The constructor now accepts a ``lock_prefix`` argument, which can be used to alter the prefix used for locks.  The standard redis backend uses `_lock` as the prefix -- which can be hard to read or isolate for tests.  One might want to use "\_" as the lock prefix (so that `keys "\_*"` will show all locks).
 
 purpose:
 --------
@@ -315,6 +320,42 @@ There are several tradeoffs and concepts to consider:
 This is test uses a particular dataset, and differences are inherent to the types of data and keys. Using the strategies from the `region_msgpack_raw_hash` on our production data has consistently dropped a 300MB **Redis** imprint to the 60-80MB range.
 
 The **Redis** configuration file is also enclosed.  the above tests are done with **Redis** compression turned on (which is why memory size fluctuates in the full demo reporting).   
+
+
+Custom Lock Classes
+-------------------
+
+If your redis db gets flushed the lock will disappear.  This will cause the redis backend to raise an exception EVEN THOUGH you have succeeded in generating your data.
+
+By using a ``lock_class``, you can catch the exception and decide what to do -- log it?, continue on, raise an error?  It's up to you!
+
+
+	import redis.exceptions
+
+	class RedisDistributedLockProxy(object):
+		"""example lock wrapper
+		this will silently pass if a LockError is encountered
+		"""
+		mutex = None
+
+		def __init__(self, mutex):
+			self.mutex = mutex
+
+		def acquire(self, *_args, **_kwargs):
+			return self.mutex.acquire(*_args, **_kwargs)
+
+		def release(self):
+			# defer imports until backend is used
+			global redis
+			import redis  # noqa
+			try:
+				self.mutex.release()
+			except redis.exceptions.LockError, e:
+				# log.debug("safe lock timeout")
+				pass
+			except Exception as e:
+				raise
+
 
 
 To Do
