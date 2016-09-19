@@ -6,19 +6,30 @@ Provides backends for talking to `Redis <http://redis.io>`_.
 
 """
 from __future__ import absolute_import
-from dogpile.cache.api import CachedValue, NO_VALUE
+from dogpile.cache.api import NO_VALUE
 from dogpile.cache.backends.redis import RedisBackend
 from dogpile.util.compat import pickle, u
 
 from collections import defaultdict
-import pdb
 
 import redis
-
 
 __all__ = ('RedisAdvancedBackend',
            'RedisAdvancedHstoreBackend',
            )
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+default_loads = pickle.loads
+
+
+def default_dumps(v):
+    return pickle.dumps(v, pickle.HIGHEST_PROTOCOL)
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 class RedisAdvancedBackend(RedisBackend):
@@ -85,11 +96,11 @@ class RedisAdvancedBackend(RedisBackend):
 
             class LockProxy(object):
                 '''
-                The proxy must accept a ``mutex`` on ``__init__``, and 
+                The proxy must accept a ``mutex`` on ``__init__``, and
                 support ``acquire`` and ``release`` methods
                 '''
                 mutex = None
-    
+
                 def __init__(self, mutex):
                     self.mutex = mutex
 
@@ -118,11 +129,8 @@ class RedisAdvancedBackend(RedisBackend):
     def __init__(self, arguments):
         arguments = arguments.copy()
         super(RedisAdvancedBackend, self).__init__(arguments)
-        self.loads = arguments.pop('loads', pickle.loads)
-        self.dumps = arguments.pop('dumps', None)
-        if self.dumps is None:
-            self.dumps = lambda v: pickle.dumps(v,
-                                                pickle.HIGHEST_PROTOCOL)
+        self.loads = arguments.pop('loads', default_loads)
+        self.dumps = arguments.pop('dumps', default_dumps)
         self.lock_class = arguments.pop('lock_class', None)
         self.lock_prefix = "%s{0}" % arguments.pop('lock_prefix', '_lock')
 
@@ -134,7 +142,7 @@ class RedisAdvancedBackend(RedisBackend):
                 return self.lock_class(_mutex)
             return _mutex
         else:
-             return None
+            return None
 
     def get(self, key):
         value = self.client.get(key)
@@ -201,19 +209,19 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     * None - monitor hash expiry.  set `redis_expiration_time` on new hash
     creation only.
     * True - unconditionally set `redis_expiration_time` on every hash
-    key set/update.  
-    
+    key set/update.
+
     Given `foo` is the redis key/namespace (as in `hmgetall foo` or
     `hmset foo key1 value` or `hmget foo key1`)
-    
+
     If ``redis_expiration_time_hash`` is set to ``True`` or ``False``, dogpile
-    will first ask Redis if there is a key named `foo` via `exists foo`.  If 
-    no key exists, then `redis_expiration_time` will be unconditionally set. 
+    will first ask Redis if there is a key named `foo` via `exists foo`.  If
+    no key exists, then `redis_expiration_time` will be unconditionally set.
     If the key already exists, then `redis_expiration_time` will only be set
     if `redis_expiration_time_hash` is set to `True`.
-    
+
     if `redis_expiration_time_hash` is set to `False`, then dogpile will not set
-    expiry times on hashes.    
+    expiry times on hashes.
 
     """
 
@@ -318,7 +326,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _hash_exists = self.client.exists(key[0])
                 if not _hash_exists:
                     _set_expiry = True
-                        
+
             # redis.py command: `hset(name, key, value)`
             self.client.hset(key[0], key[1],
                              self.dumps(value))

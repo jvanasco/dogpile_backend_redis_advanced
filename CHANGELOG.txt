@@ -1,3 +1,9 @@
+v 0.1.1
+	some flake8 cleanup
+	changed the default serializer to a module function instead of a lambda.
+	- this should be easier for inspection and slighter better for memory as it
+	  is now a single global for the package.
+
 v 0.1.0
 	added `lock_class`
 	added `lock_prefix`
