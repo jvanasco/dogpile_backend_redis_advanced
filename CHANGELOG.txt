@@ -1,3 +1,6 @@
+v 0.1.2
+	aliased loads/dumps on multi functions into a local variable; on larger lists this may be faster
+	
 v 0.1.1
 	some flake8 cleanup
 	changed the default serializer to a module function instead of a lambda.

@@ -154,9 +154,10 @@ class RedisAdvancedBackend(RedisBackend):
         if not keys:
             return []
         values = self.client.mget(keys)
-        return [
-            self.loads(v) if v is not None else NO_VALUE
-            for v in values]
+        loads = self.loads  # potentially faster on large lists
+        return [loads(v) if v is not None else NO_VALUE
+                for v in values
+                ]
 
     def set(self, key, value):
         if self.redis_expiration_time:
@@ -166,11 +167,11 @@ class RedisAdvancedBackend(RedisBackend):
             self.client.set(key, self.dumps(value))
 
     def set_multi(self, mapping):
+        dumps = self.dumps  # potentially faster on large lists
         mapping = dict(
-            (k, self.dumps(v))
+            (k, dumps(v))
             for k, v in mapping.items()
         )
-
         if not self.redis_expiration_time:
             self.client.mset(mapping)
         else:
@@ -310,9 +311,9 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 for (_idx, _v) in _values:
                     values[_idx] = _v
 
-        return [
-            self.loads(v) if v is not None else NO_VALUE
-            for v in values]
+        loads = self.loads  # potentially faster on large lists
+        return [loads(v) if v is not None else NO_VALUE
+                for v in values]
 
     def set(self, key, value):
         if isinstance(key, tuple):
@@ -348,8 +349,9 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         we'll always use a pipeline for this class
         """
         # encode
+        dumps = self.dumps  # potentially faster on large lists
         mapping = dict(
-            (k, self.dumps(v))
+            (k, dumps(v))
             for k, v in mapping.items()
         )
 
