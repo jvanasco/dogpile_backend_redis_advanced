@@ -369,8 +369,8 @@ fake_prefixes2 = ("qkknasdkk",
                   "61jkansd89asd",
                   )
 
-max_a = 1000000
-max_b = 10000
+max_a = 1000
+max_b = 100
 if False:
     max_a = max_a/100
     max_b = max_a/10
