@@ -25,8 +25,31 @@ __all__ = ('RedisAdvancedBackend',
 default_loads = pickle.loads
 
 
-def default_dumps(v):
-    return pickle.dumps(v, pickle.HIGHEST_PROTOCOL)
+def default_dumps_factory():
+    """
+    optimized for the cpython compiler. shaves a tiny bit off.
+    this turns 'pickle_dumps' into a local variable to the dump function.
+    original:    
+              0 LOAD_GLOBAL              0 (pickle)
+              3 LOAD_ATTR                1 (dumps)
+              6 LOAD_FAST                0 (v)
+              9 LOAD_GLOBAL              0 (pickle)
+             12 LOAD_ATTR                2 (HIGHEST_PROTOCOL)
+             15 CALL_FUNCTION            2
+             18 RETURN_VALUE            
+    optimized:
+              0 LOAD_DEREF               0 (dumps)
+              3 LOAD_FAST                0 (v)
+              6 LOAD_GLOBAL              0 (pickle)
+              9 LOAD_ATTR                1 (HIGHEST_PROTOCOL)
+             12 CALL_FUNCTION            2
+             15 RETURN_VALUE       
+    """
+    _dumps = pickle.dumps
+    def default_dumps(v):
+        return _dumps(v, pickle.HIGHEST_PROTOCOL)
+    return default_dumps
+default_dumps = default_dumps_factory()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
