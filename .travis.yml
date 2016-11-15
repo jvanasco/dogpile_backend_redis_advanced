@@ -4,6 +4,7 @@ python:
 
 install:
   - pip install -e .
+  - pip install tox-travis
   - pip install tox --use-mirrors
   
 script: tox
