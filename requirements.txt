@@ -1,0 +1,5 @@
+dogpile.cache
+mock
+msgpack-python
+pytest
+redis
