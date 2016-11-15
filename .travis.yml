@@ -5,7 +5,10 @@ python:
  - "3.4"
  - "3.5"
 
-script: pytest
+install:
+  - pip install tox --use-mirrors
+  
+script: tox
 
 services:
   - redis-server
