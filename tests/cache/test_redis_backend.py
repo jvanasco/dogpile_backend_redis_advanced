@@ -747,7 +747,7 @@ class RedisDistributedLockProxySilent(RedisDistributedLockProxy):
         import redis  # noqa
         try:
             self.mutex.release()
-        except redis.exceptions.LockError, e:
+        except redis.exceptions.LockError as e:
             # log.debug("safe lock timeout")
             pass
         except Exception as e:
@@ -764,7 +764,7 @@ class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
         import redis  # noqa
         try:
             self.mutex.release()
-        except redis.exceptions.LockError, e:
+        except redis.exceptions.LockError as e:
             raise
         except Exception as e:
             raise
@@ -856,7 +856,7 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
         try:
             result = reg.get_or_create("creator_sleep", creator_sleep)
             raise ValueError("expected an error!")
-        except redis.exceptions.LockError, e:
+        except redis.exceptions.LockError as e:
             pass
 
     def test_pass_lock_timeout__multi(self):
@@ -874,5 +874,5 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
         try:
             _values = reg.get_or_create_multi(_keys, _creator_multi)
             raise ValueError("expected an error!")
-        except redis.exceptions.LockError, e:
+        except redis.exceptions.LockError as e:
             pass

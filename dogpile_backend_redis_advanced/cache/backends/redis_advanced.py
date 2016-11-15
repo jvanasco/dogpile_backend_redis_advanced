@@ -136,7 +136,7 @@ class RedisAdvancedBackend(RedisBackend):
                     '''Release the mutex lock'''
                     try:
                         self.mutex.release()
-                    except redis.exceptions.LockError, e:
+                    except redis.exceptions.LockError as e:
                         # handle the error
                         pass
                     except Exception as e:
