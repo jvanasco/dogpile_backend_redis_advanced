@@ -59,6 +59,7 @@ setup(
     license='BSD',
     packages=find_packages('.', exclude=['tests*']),
     zip_safe=False,
-    tests_require=['pytest', 'pytest-cov', 'mock', 'msgpack-python', 'dogpile.cache', ],
+    install_requires=['redis', 'dogpile.cache', ],
+    tests_require=['pytest', 'pytest-cov', 'mock', 'msgpack-python', 'dogpile.cache', 'redis', ],
     cmdclass={'test': PyTest},
 )
