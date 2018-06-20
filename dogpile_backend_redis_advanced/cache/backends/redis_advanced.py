@@ -29,21 +29,20 @@ def default_dumps_factory():
     """
     optimized for the cpython compiler. shaves a tiny bit off.
     this turns 'pickle_dumps' into a local variable to the dump function.
-    original:    
-            0 LOAD_GLOBAL              0 (pickle)
+    original:
+              0 LOAD_GLOBAL              0 (pickle)
               3 LOAD_ATTR                1 (dumps)
               6 LOAD_GLOBAL              2 (v)
               9 LOAD_GLOBAL              0 (pickle)
              12 LOAD_ATTR                3 (HIGHEST_PROTOCOL)
              15 CALL_FUNCTION            2
-             18 RETURN_VALUE            
+             18 RETURN_VALUE
     optimized:
               0 LOAD_DEREF               0 (_dumps)
               3 LOAD_FAST                0 (v)
               6 LOAD_DEREF               1 (_protocol)
               9 CALL_FUNCTION            2
-             12 RETURN_VALUE        
-    
+             12 RETURN_VALUE
     """
     _dumps = pickle.dumps
     _protocol = pickle.HIGHEST_PROTOCOL
