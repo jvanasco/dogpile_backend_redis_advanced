@@ -1,3 +1,4 @@
+from __future__ import print_function
 """
 This script demonstrates how some caching is done.
 
@@ -463,14 +464,14 @@ if __name__ == '__main__' :
         try:
             _info = redis_connection.info()
             pid = _info['process_id']
-            print "`redis-server` is open, must kill %s" % pid
+            print("`redis-server` is open, must kill %s" % pid)
             redis_connection.flushdb()  # just clear it!
             _old_process = psutil.Process(pid)
             _old_process.kill()
-        except redis.exceptions.ConnectionError, e:
+        except redis.exceptions.ConnectionError as e:
             pass
 
-    print "initialize test -- killing `redis-server` if open"
+    print("initialize test -- killing `redis-server` if open")
     kill_redis()
     
     regions = (
@@ -501,28 +502,28 @@ if __name__ == '__main__' :
         if _region_name not in REGIONS:
             raise ValueError("invalid region")
         
-        print "--------------------------------"
-        print "testing region: %s" % _region_name
+        print("--------------------------------")
+        print("testing region: %s" % _region_name)
 
-        print "1. starting redis"
+        print("1. starting redis")
         redis_server = subprocess.Popen([REDIS_BIN, REDIS_CONF], shell=False)
         _info = None
         while _info is None:
             time.sleep(1)
-            print "."
+            print(".")
             try:
                 _info = redis_connection.info()
-            except redis.exceptions.ConnectionError, e:
+            except redis.exceptions.ConnectionError as e:
                 pass
 
-        print "2. priming region: %s" % _region_name
+        print("2. priming region: %s" % _region_name)
         t_start = time.time()
         prime_region(_region_name)
         t_end = time.time()
         test_results[_region_name]['prime_time'] = t_end - t_start
-        print "priming took : %s" % test_results[_region_name]['prime_time']
+        print("priming took : %s" % test_results[_region_name]['prime_time'])
         
-        print "3. Checking info"
+        print("3. Checking info")
         _info = redis_connection.info()
         # pdb.set_trace()
 
@@ -534,20 +535,20 @@ if __name__ == '__main__' :
         for k in redis_tracked_keys:
             try:
                 test_results[_region_name]['samples'][k] = redis_connection.get(k)
-            except redis.exceptions.ResponseError, e:
+            except redis.exceptions.ResponseError as e:
                 mapping = redis_connection.hgetall(k)
-                test_results[_region_name]['samples'][k] = {_k: mapping[_k] for _k in sorted(mapping.keys())[:10]}
+                test_results[_region_name]['samples'][k] = {_k: mapping[_k] for _k in sorted(list(mapping.keys()))[:10]}
                 
 
         # clear this out, so it doesn't persist
         redis_connection.flushdb()        
 
-        print "4. killing `redis-server`"
-        print "killing process %s" % redis_server.pid
+        print("4. killing `redis-server`")
+        print("killing process %s" % redis_server.pid)
         _old_process = psutil.Process(redis_server.pid)
         _old_process.kill()
 
-    print "demo cleanup.  kill `redis-server`?"    
+    print("demo cleanup.  kill `redis-server`?"    )
     kill_redis()
 
     pprint.pprint(test_results)

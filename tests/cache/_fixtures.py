@@ -246,8 +246,8 @@ class _GenericBackendTest(_GenericBackendFixture, TestCase):
         for t in threads:
             t.join()
 
-        assert sum([len(v) for v in canary.values()]) > 10
-        for l in canary.values():
+        assert sum([len(v) for v in list(canary.values())]) > 10
+        for l in list(canary.values()):
             assert False not in l
 
     def test_region_delete(self):
@@ -421,7 +421,7 @@ class MockBackend(CacheBackend):
         self._cache[key] = value
 
     def set_multi(self, mapping):
-        for key, value in mapping.items():
+        for key, value in list(mapping.items()):
             self.set(key, value)
 
     def delete(self, key):
