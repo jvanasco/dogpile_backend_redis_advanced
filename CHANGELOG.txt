@@ -1,3 +1,7 @@
+v0.2
+	2019.04.24
+	full Python3 compatibility of tests and demo files.  the core package basically worked before, but now officially does.
+
 2016.11.15
 	adding travis
 

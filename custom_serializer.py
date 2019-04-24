@@ -1,6 +1,10 @@
+from __future__ import print_function
 import datetime
 import msgpack
-import cPickle
+try:
+    import cPickle as pickle  # 2to3
+except:
+    import pickle
 
 # ==============================================================================
 
@@ -92,36 +96,36 @@ if __name__ == '__main__':
     encoded_msgpack = MsgpackSerializer.dumps(sample_data)
     loaded_msgpack = MsgpackSerializer.loads(encoded_msgpack)
     
-    print "==" * 40
-    print "MSGPACK"
-    print "- " * 40
-    print "RAW"
+    print("==" * 40)
+    print("MSGPACK")
+    print("- " * 40)
+    print("RAW")
     pprint.pprint(sample_data) 
-    print "- " * 40
-    print "ENCODED"
+    print("- " * 40)
+    print("ENCODED")
     pprint.pprint(encoded_msgpack) 
-    print "- " * 40
-    print "LOADED"
+    print("- " * 40)
+    print("LOADED")
     pprint.pprint(loaded_msgpack)
-    print "- " * 40
+    print("- " * 40)
     
 
-    encoded_pickle = cPickle.dumps(sample_data)
-    loaded_pickle = cPickle.loads(encoded_pickle)
+    encoded_pickle = pickle.dumps(sample_data)
+    loaded_pickle = pickle.loads(encoded_pickle)
 
     iterations = 1000
 
     time_msgpack_dumps = timeit.timeit('MsgpackSerializer.dumps(sample_data)','from __main__ import MsgpackSerializer, sample_data', number=iterations)
     time_msgpack_loads = timeit.timeit('MsgpackSerializer.loads(encoded_msgpack)','from __main__ import MsgpackSerializer, encoded_msgpack', number=iterations)
 
-    time_pickle_dumps = timeit.timeit('cPickle.dumps(sample_data)','from __main__ import cPickle, sample_data', number=iterations)
-    time_pickle_loads = timeit.timeit('cPickle.loads(encoded_pickle)','from __main__ import cPickle, encoded_pickle', number=iterations)
+    time_pickle_dumps = timeit.timeit('pickle.dumps(sample_data)','from __main__ import pickle, sample_data', number=iterations)
+    time_pickle_loads = timeit.timeit('pickle.loads(encoded_pickle)','from __main__ import pickle, encoded_pickle', number=iterations)
     
-    print "iterations = %s" % iterations
-    print "MsgpackSerializer.dumps : %s" % time_msgpack_dumps
-    print "MsgpackSerializer.loads : %s" % time_msgpack_loads
-    print "cPickle.dumps           : %s" % time_pickle_dumps
-    print "cPickle.loads           : %s" % time_pickle_loads
+    print("iterations = %s" % iterations)
+    print("MsgpackSerializer.dumps : %s" % time_msgpack_dumps)
+    print("MsgpackSerializer.loads : %s" % time_msgpack_loads)
+    print("pickle.dumps           : %s" % time_pickle_dumps)
+    print("pickle.loads           : %s" % time_pickle_loads)
     
     
     

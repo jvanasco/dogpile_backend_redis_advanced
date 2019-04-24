@@ -10,6 +10,8 @@ import os
 import pdb
 import time
 import unittest
+import sys
+
 
 from mock import patch, Mock
 import msgpack
@@ -17,6 +19,8 @@ import pytest
 
 REDIS_HOST = '127.0.0.1'
 REDIS_PORT = int(os.getenv('DOGPILE_REDIS_PORT', '6379'))
+
+COMPAT_PY3 = True if (sys.version_info > (3, 0)) else False
 
 
 # import to register the plugin
@@ -209,7 +213,11 @@ def my_loads(value):
     that require the ability to set/read raw data.
     we could disable that test, but this workaround supports it.
     '''
-    value = msgpack.unpackb(value, use_list=False)
+    if COMPAT_PY3:
+        # this is True for backward compatibility
+        value = msgpack.unpackb(value, use_list=False, raw=False)
+    else:
+        value = msgpack.unpackb(value, use_list=False)
     if isinstance(value, tuple):
         return CachedValue(*value)
     return value
@@ -236,17 +244,6 @@ class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate_Test):
 class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate_Test):
     backend = 'dogpile_backend_redis_advanced_hstore'
 
-
-def my_loads(value):
-    ''''
-    we need to unpack the value and stash it into a CachedValue
-    we support strings in this version, because it's used in unit tests
-    that require the ability to set/read raw data
-    '''
-    value = msgpack.unpackb(value, use_list=False)
-    if isinstance(value, tuple):
-        return CachedValue(*value)
-    return value
     
 # ==============================================================================
 
@@ -256,7 +253,11 @@ def raw_loads(value):
     ''''
     we need to unpack the value and stash it into a CachedValue
     '''
-    value = msgpack.unpackb(value, use_list=False)
+    if COMPAT_PY3:
+        # this is True for backward compatibility
+        value = msgpack.unpackb(value, use_list=False, raw=False)
+    else:
+        value = msgpack.unpackb(value, use_list=False)
     return CachedValue(
         value,
         {

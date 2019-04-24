@@ -193,13 +193,13 @@ class RedisAdvancedBackend(RedisBackend):
         dumps = self.dumps  # potentially faster on large lists
         mapping = dict(
             (k, dumps(v))
-            for k, v in mapping.items()
+            for k, v in list(mapping.items())
         )
         if not self.redis_expiration_time:
             self.client.mset(mapping)
         else:
             pipe = self.client.pipeline()
-            for key, value in mapping.items():
+            for key, value in list(mapping.items()):
                 pipe.setex(key, self.redis_expiration_time, value)
             pipe.execute()
 
@@ -309,7 +309,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             # redis.py command: `mget(keys, *args)`
             _values = self.client.mget(_keys_str)
             # build this back into the results in the right order
-            _values = zip(_keys_str_idx, _values)
+            _values = list(zip(_keys_str_idx, _values))
             for (_idx, _v) in _values:
                 values[_idx] = _v
 
@@ -330,7 +330,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 # redis.py command: `hmget(name, keys, *args)`
                 _values = self.client.hmget(name, _hashed[name]['keys'])
                 # build this back into the results in the right order
-                _values = zip(_hashed[name]['idx'], _values)
+                _values = list(zip(_hashed[name]['idx'], _values))
                 for (_idx, _v) in _values:
                     values[_idx] = _v
 
@@ -375,14 +375,14 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         dumps = self.dumps  # potentially faster on large lists
         mapping = dict(
             (k, dumps(v))
-            for k, v in mapping.items()
+            for k, v in list(mapping.items())
         )
 
         # derive key types
         _keys_str = []
         _keys_hash = []
         _hash_bucketed = None
-        for _k in mapping.keys():
+        for _k in list(mapping.keys()):
             if isinstance(_k, tuple):
                 _keys_hash.append(_k)
             else:
@@ -396,7 +396,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             _hash_bucketed = defaultdict(dict)
             for k in _keys_hash:
                 _hash_bucketed[k[0]][k[1]] = mapping[k]
-            for name in _hash_bucketed.keys():
+            for name in list(_hash_bucketed.keys()):
                 _set_expiry = None
                 if self.redis_expiration_time_hash is True:
                     # unconditionally set

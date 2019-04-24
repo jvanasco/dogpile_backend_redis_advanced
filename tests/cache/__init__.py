@@ -1,9 +1,12 @@
-import re
-import pytest
 from functools import wraps
-from dogpile.util import compat
-from dogpile.util.compat import configparser, io  # noqa
+import pytest
+
+import re
 import time
+
+from dogpile.util import compat
+from dogpile.util.compat import configparser  # noqa
+from dogpile.util.compat import io  # noqa
 
 
 def eq_(a, b, msg=None):
