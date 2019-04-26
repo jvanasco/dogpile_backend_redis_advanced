@@ -1,3 +1,7 @@
+v0.2.1
+	2019.04.26
+	undid some aggressive `list()` encapsulating by the 2to3 tool
+
 v0.2.0
 	2019.04.24
 	full Python3 compatibility of tests and demo files.  the core package basically worked before, but now officially does.
