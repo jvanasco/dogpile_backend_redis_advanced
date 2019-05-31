@@ -1,3 +1,7 @@
+v0.2.2 (unreleased)
+	2019.05.31 - standardize imports to use `dogpile.util.compat.pickle` instead of our own detection
+
+
 v0.2.1
 	2019.04.26
 	undid some aggressive `list()` encapsulating by the 2to3 tool

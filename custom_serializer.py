@@ -1,10 +1,9 @@
 from __future__ import print_function
 import datetime
 import msgpack
-try:
-    import cPickle as pickle  # 2to3
-except:
-    import pickle
+
+from dogpile.util.compat import pickle
+
 
 # ==============================================================================
 
