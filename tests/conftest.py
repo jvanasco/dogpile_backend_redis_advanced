@@ -3,6 +3,7 @@ import sys
 import logging
 
 import logging.config
+
 logging.config.fileConfig("log_tests.ini")
 
 
@@ -12,7 +13,7 @@ def is_unittest(obj):
     Lifted from older versions of py.test, as this seems to be removed.
 
     """
-    unittest = sys.modules.get('unittest')
+    unittest = sys.modules.get("unittest")
     if unittest is None:
         return  # nobody can have derived unittest.TestCase
     try:

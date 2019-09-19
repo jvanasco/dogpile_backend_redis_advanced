@@ -37,7 +37,7 @@ def winsleep():
     # sufficient for windows time.time()
     # to change
     if compat.win32:
-        time.sleep(.001)
+        time.sleep(0.001)
 
 
 def requires_py3k(fn):
@@ -46,4 +46,5 @@ def requires_py3k(fn):
         if compat.py2k:
             pytest.skip("Python 3 required")
         return fn(*arg, **kw)
+
     return wrap

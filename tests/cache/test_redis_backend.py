@@ -17,8 +17,8 @@ from mock import patch, Mock
 import msgpack
 import pytest
 
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = int(os.getenv('DOGPILE_REDIS_PORT', '6379'))
+REDIS_HOST = "127.0.0.1"
+REDIS_PORT = int(os.getenv("DOGPILE_REDIS_PORT", "6379"))
 
 COMPAT_PY3 = True if (sys.version_info > (3, 0)) else False
 
@@ -59,8 +59,8 @@ tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedAltern
 
 """
 
-class _TestRedisConn(object):
 
+class _TestRedisConn(object):
     @classmethod
     def _check_backend_available(cls, backend):
         try:
@@ -71,8 +71,8 @@ class _TestRedisConn(object):
             client.delete("x")
         except:
             pytest.skip(
-                "redis is not running or "
-                "otherwise not functioning correctly")
+                "redis is not running or " "otherwise not functioning correctly"
+            )
 
 
 # ==============================================================================
@@ -80,21 +80,16 @@ class _TestRedisConn(object):
 
 class _Compatibility_Test(_TestRedisConn, _GenericBackendTest):
     config_args = {
-        "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            "foo": "barf"
-        }
+        "arguments": {"host": REDIS_HOST, "port": REDIS_PORT, "db": 0, "foo": "barf"}
     }
 
 
 class RedisAdvanced_Compatibility_Test(_Compatibility_Test):
-    backend = 'dogpile_backend_redis_advanced'
+    backend = "dogpile_backend_redis_advanced"
 
 
 class RedisAdvancedHstore_Compatibility_Test(_Compatibility_Test):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -103,28 +98,31 @@ class RedisAdvancedHstore_Compatibility_Test(_Compatibility_Test):
 class _Compatibility_DistributedMutexTest(_TestRedisConn, _GenericMutexTest):
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'distributed_lock': True,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "distributed_lock": True,
         }
     }
 
 
-class RedisAdvanced_Compatibility_DistributedMutexTest(_Compatibility_DistributedMutexTest):
-    backend = 'dogpile_backend_redis_advanced'
+class RedisAdvanced_Compatibility_DistributedMutexTest(
+    _Compatibility_DistributedMutexTest
+):
+    backend = "dogpile_backend_redis_advanced"
 
 
-class RedisAdvancedHstore_Compatibility_DistributedMutexTest(_Compatibility_DistributedMutexTest):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+class RedisAdvancedHstore_Compatibility_DistributedMutexTest(
+    _Compatibility_DistributedMutexTest
+):
+    backend = "dogpile_backend_redis_advanced_hstore"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-@patch('redis.StrictRedis', autospec=True)
+@patch("redis.StrictRedis", autospec=True)
 class _Compatibility_ConnectionTest(TestCase):
-
     @classmethod
     def setup_class(cls):
         cls.backend_cls = _backend_loader.load(cls.backend)
@@ -142,77 +140,61 @@ class _Compatibility_ConnectionTest(TestCase):
 
     def test_connect_with_defaults(self, MockStrictRedis):
         # The defaults, used if keys are missing from the arguments dict.
-        arguments = {
-            'host': 'localhost',
-            'password': None,
-            'port': 6379,
-            'db': 0,
-        }
+        arguments = {"host": "localhost", "password": None, "port": 6379, "db": 0}
         self._test_helper(MockStrictRedis, arguments, {})
 
     def test_connect_with_basics(self, MockStrictRedis):
-        arguments = {
-            'host': '127.0.0.1',
-            'password': None,
-            'port': 6379,
-            'db': 0,
-        }
+        arguments = {"host": "127.0.0.1", "password": None, "port": 6379, "db": 0}
         self._test_helper(MockStrictRedis, arguments)
 
     def test_connect_with_password(self, MockStrictRedis):
         arguments = {
-            'host': '127.0.0.1',
-            'password': 'some password',
-            'port': 6379,
-            'db': 0,
+            "host": "127.0.0.1",
+            "password": "some password",
+            "port": 6379,
+            "db": 0,
         }
         self._test_helper(MockStrictRedis, arguments)
 
     def test_connect_with_socket_timeout(self, MockStrictRedis):
         arguments = {
-            'host': '127.0.0.1',
-            'port': 6379,
-            'socket_timeout': 0.5,
-            'password': None,
-            'db': 0,
+            "host": "127.0.0.1",
+            "port": 6379,
+            "socket_timeout": 0.5,
+            "password": None,
+            "db": 0,
         }
         self._test_helper(MockStrictRedis, arguments)
 
     def test_connect_with_connection_pool(self, MockStrictRedis):
         pool = Mock()
-        arguments = {
-            'connection_pool': pool,
-            'socket_timeout': 0.5
-        }
-        expected_args = {'connection_pool': pool}
-        self._test_helper(MockStrictRedis, expected_args,
-                          connection_args=arguments)
+        arguments = {"connection_pool": pool, "socket_timeout": 0.5}
+        expected_args = {"connection_pool": pool}
+        self._test_helper(MockStrictRedis, expected_args, connection_args=arguments)
 
     def test_connect_with_url(self, MockStrictRedis):
-        arguments = {
-            'url': 'redis://redis:password@127.0.0.1:6379/0'
-        }
+        arguments = {"url": "redis://redis:password@127.0.0.1:6379/0"}
         self._test_helper(MockStrictRedis.from_url, arguments)
 
 
 class RedisAdvanced_Compatibility_ConnectionTest(_Compatibility_ConnectionTest):
-    backend = 'dogpile_backend_redis_advanced'
+    backend = "dogpile_backend_redis_advanced"
 
 
 class RedisAdvancedHstore_Compatibility_ConnectionTest(_Compatibility_ConnectionTest):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
 
 
 # ==============================================================================
 
 
 def my_loads(value):
-    ''''
+    """'
     we need to unpack the value and stash it into a CachedValue
     we support strings in this version, because it's used in unit tests
     that require the ability to set/read raw data.
     we could disable that test, but this workaround supports it.
-    '''
+    """
     if COMPAT_PY3:
         # this is True for backward compatibility
         value = msgpack.unpackb(value, use_list=False, raw=False)
@@ -221,49 +203,43 @@ def my_loads(value):
     if isinstance(value, tuple):
         return CachedValue(*value)
     return value
-    
 
 
 class _SerializedAlternate_Test(_TestRedisConn, _GenericBackendTest):
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
             "foo": "barf",
-            'loads': my_loads,
-            'dumps': msgpack.packb,
+            "loads": my_loads,
+            "dumps": msgpack.packb,
         }
     }
 
 
 class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate_Test):
-    backend = 'dogpile_backend_redis_advanced'
+    backend = "dogpile_backend_redis_advanced"
 
 
 class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate_Test):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
 
-    
+
 # ==============================================================================
 
 
-
 def raw_loads(value):
-    ''''
+    """'
     we need to unpack the value and stash it into a CachedValue
-    '''
+    """
     if COMPAT_PY3:
         # this is True for backward compatibility
         value = msgpack.unpackb(value, use_list=False, raw=False)
     else:
         value = msgpack.unpackb(value, use_list=False)
-    return CachedValue(
-        value,
-        {
-            "ct": time.time(),
-            "v": value_version
-        })
+    return CachedValue(value, {"ct": time.time(), "v": value_version})
+
 
 def raw_dumps(value):
     if isinstance(value, CachedValue):
@@ -271,21 +247,23 @@ def raw_dumps(value):
     value = msgpack.packb(value)
     return value
 
+
 class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
     """
     """
+
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
             "foo": "barf",
-            'loads': raw_loads,
-            'dumps': raw_dumps,
-            'redis_expiration_time': 1,
+            "loads": raw_loads,
+            "dumps": raw_dumps,
+            "redis_expiration_time": 1,
         }
     }
-    
+
     @unittest.skip("do not test get/set of raw value")
     def test_backend_set_get_value(self):
         pass
@@ -293,7 +271,7 @@ class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
     @unittest.skip("do not test region expiry, we defer expiry to the cloud")
     def test_region_expire(self):
         pass
-    
+
     def test_threaded_dogpile(self):
         """
         this is modified version of the upstream fixture test
@@ -333,11 +311,11 @@ class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
 
 
 class RedisAdvanced_SerializedRaw_Test(_SerializedRaw_Test):
-    backend = 'dogpile_backend_redis_advanced'
+    backend = "dogpile_backend_redis_advanced"
 
 
 class RedisAdvancedHstore_SerializedRaw_Test(_SerializedRaw_Test):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
 
 
 # ==============================================================================
@@ -347,14 +325,45 @@ key_string = "some_key"
 key_hash = ("some_key", "h1")
 cloud_value = "some value"
 
-keys_mixed = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-              ('a', 10), ('a', 30), ('a', 20),
-              ('b', 9), ('c', 8), ('d', 7), ('e', 6), ('f', 5), ('g', 4), ('h', 3), ('i', 2), ('j', 1),
-              11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-              ]
+keys_mixed = [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    ("a", 10),
+    ("a", 30),
+    ("a", 20),
+    ("b", 9),
+    ("c", 8),
+    ("d", 7),
+    ("e", 6),
+    ("f", 5),
+    ("g", 4),
+    ("h", 3),
+    ("i", 2),
+    ("j", 1),
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+]
+
 
 def keys_multiplier(x):
     return x * 2
+
 
 mixed_generated = []
 for k in keys_mixed:
@@ -364,19 +373,18 @@ for k in keys_mixed:
         mixed_generated.append((k, keys_multiplier(k)))
 
 
-
 class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
     # tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'redis_expiration_time': 3,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "redis_expiration_time": 3,
         }
     }
-    
+
     def test_backend_set_get_delete(self):
         """
         this tests
@@ -384,14 +392,14 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
             * set
             * delete
         """
-    
+
         backend = self._backend()
         # strings
         backend.set(key_string, cloud_value)
         eq_(backend.get(key_string), cloud_value)
         backend.delete(key_string)
         eq_(backend.get(key_string), NO_VALUE)
-        
+
         # make sure we delete above. otherwise the test will fail by trying to
         # use a hmset on a normal key
 
@@ -412,13 +420,13 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
 
         # set up the mapping
         mixed_mapping = dict(mixed_generated)
-        
+
         # upload the mapping
         backend.set_multi(mixed_mapping)
 
         # grab the results
         results = backend.get_multi(keys_mixed)
-        
+
         # enumerate the results, match their order to the ordered array
         for idx, result in enumerate(results):
             eq_(result, mixed_generated[idx][1])
@@ -428,7 +436,7 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
 
         # grab the results
         results = backend.get_multi(keys_mixed)
-        
+
         # ensure they're all misses
         for _result in results:
             eq_(_result, NO_VALUE)
@@ -438,11 +446,11 @@ class HstoreTest_Expires_Hash(HstoreTest):
     redis_expiration_time_hash = None
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'redis_expiration_time': 3,
-            'redis_expiration_time_hash': redis_expiration_time_hash,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "redis_expiration_time": 3,
+            "redis_expiration_time_hash": redis_expiration_time_hash,
         }
     }
 
@@ -482,11 +490,11 @@ class HstoreTest_Expires_Hash(HstoreTest):
 
         # grab the results
         results = backend.get_multi(keys_mixed)
-        
+
         # enumerate the results, match their order to the ordered array
         for idx, result in enumerate(results):
             eq_(result, mixed_generated[idx][1])
-    
+
         # we don't set ttl on `redis_expiration_time_hash = False`
         if self.redis_expiration_time_hash is not False:
             # make sure every key has an expiry!
@@ -504,14 +512,13 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
     redis_expiration_time_hash = True
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'redis_expiration_time': 10,
-            'redis_expiration_time_hash': redis_expiration_time_hash,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "redis_expiration_time": 10,
+            "redis_expiration_time_hash": redis_expiration_time_hash,
         }
     }
-
 
     def test_expires_tracked(self):
         """
@@ -549,11 +556,11 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
 
             # grab the results
             results = backend.get_multi(keys_mixed)
-        
+
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
                 eq_(result, mixed_generated[idx][1])
-                
+
                 key = keys_mixed[idx]
                 if isinstance(key, tuple):
                     key = key[0]
@@ -565,16 +572,15 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
         backend.delete_multi(keys_mixed)
 
 
-
 class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
     redis_expiration_time_hash = None
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'redis_expiration_time': 10,
-            'redis_expiration_time_hash': redis_expiration_time_hash,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "redis_expiration_time": 10,
+            "redis_expiration_time_hash": redis_expiration_time_hash,
         }
     }
 
@@ -602,7 +608,6 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
         backend.delete(key_hash)
         eq_(backend.get(key_hash), NO_VALUE)
 
-
     def test_expires_tracked_multi(self):
         backend = self._backend()
 
@@ -619,11 +624,11 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
                 eq_(result, mixed_generated[idx][1])
-        
+
             time.sleep(1)
 
         # check the ttls.  we should not have set them on the subsequent loops
-        for key in keys_mixed:   
+        for key in keys_mixed:
             if isinstance(key, tuple):
                 key = key[0]
                 ttl = backend.client.ttl(key)
@@ -637,11 +642,11 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
     redis_expiration_time_hash = False
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'redis_expiration_time': 2,
-            'redis_expiration_time_hash': False,
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "redis_expiration_time": 2,
+            "redis_expiration_time_hash": False,
         }
     }
 
@@ -675,13 +680,13 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
 
             # grab the results
             results = backend.get_multi(keys_mixed)
-        
+
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
                 eq_(result, mixed_generated[idx][1])
 
-            # and make sure we did not set the ttl                
-            for key in keys_mixed:   
+            # and make sure we did not set the ttl
+            for key in keys_mixed:
                 if isinstance(key, tuple):
                     key = key[0]
                     ttl = backend.client.ttl(key)
@@ -693,14 +698,14 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
 
 
 class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
     config_args = {
         "arguments": {
-            'host': REDIS_HOST,
-            'port': REDIS_PORT,
-            'db': 0,
-            'distributed_lock': True,
-            'lock_prefix': '_lk-',
+            "host": REDIS_HOST,
+            "port": REDIS_PORT,
+            "db": 0,
+            "distributed_lock": True,
+            "lock_prefix": "_lk-",
         }
     }
 
@@ -715,7 +720,7 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
         value = "creator value"
 
         def creator():
-            lock_key = self.config_args['arguments']['lock_prefix'] + key
+            lock_key = self.config_args["arguments"]["lock_prefix"] + key
             locked = reg.backend.client.get(lock_key)
             assert locked and locked is not NO_VALUE
             return value
@@ -729,11 +734,15 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
 class RedisDistributedLockProxy(object):
     """base lock wrapper for testing
     """
+
     mutex = None
+
     def __init__(self, mutex):
         self.mutex = mutex
+
     def acquire(self, *_args, **_kwargs):
         return self.mutex.acquire(*_args, **_kwargs)
+
     def release(self):
         raise NotImplementedError()
 
@@ -742,10 +751,12 @@ class RedisDistributedLockProxySilent(RedisDistributedLockProxy):
     """example lock wrapper
     this will silently pass if a LockError is encountered
     """
+
     def release(self):
         # defer imports until backend is used
         global redis
         import redis  # noqa
+
         try:
             self.mutex.release()
         except redis.exceptions.LockError as e:
@@ -759,10 +770,12 @@ class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
     """example lock wrapper
     this will re-raise LockErrors but give a hook to log or retry
     """
+
     def release(self):
         # defer imports until backend is used
         global redis
         import redis  # noqa
+
         try:
             self.mutex.release()
         except redis.exceptions.LockError as e:
@@ -772,16 +785,16 @@ class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
 
 
 class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
     config_args = {
         "arguments": {
-            'host': '127.0.0.1',
-            'port': 6379,
-            'db': 0,
-            'distributed_lock': True,
-            'lock_class': RedisDistributedLockProxySilent,
-            'lock_timeout': 1,
-            'redis_expiration_time': 1,
+            "host": "127.0.0.1",
+            "port": 6379,
+            "db": 0,
+            "distributed_lock": True,
+            "lock_class": RedisDistributedLockProxySilent,
+            "lock_timeout": 1,
+            "redis_expiration_time": 1,
         }
     }
 
@@ -791,6 +804,7 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
         # ensure this works instantly.
         def creator():
             return "creator value"
+
         assert reg.get_or_create("creator", creator) == "creator value"
 
         # reset the region...
@@ -799,11 +813,12 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
         # can this work on a timeout?
         # sleep for 1 second longer than the timeout, so redis must expire
         def creator_sleep():
-            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            time.sleep(self.config_args["arguments"]["lock_timeout"] + 1)
             return "creator_sleep value"
 
-        assert reg.get_or_create("creator_sleep", creator_sleep) == \
-            "creator_sleep value"
+        assert (
+            reg.get_or_create("creator_sleep", creator_sleep) == "creator_sleep value"
+        )
 
         # no need reset, the `creator_sleep` is timed out
 
@@ -811,14 +826,12 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
         reg = self._region()
 
         def _creator_multi(*_creator_keys):
-            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            time.sleep(self.config_args["arguments"]["lock_timeout"] + 1)
             # rval is an ordered list
             return [int(_k[-1]) for _k in _creator_keys]
 
         _values_expected = [1, 2, 3]
-        _keys = [str("creator_sleep_multi-%s" % i)
-                 for i in _values_expected
-                 ]
+        _keys = [str("creator_sleep_multi-%s" % i) for i in _values_expected]
         _values = reg.get_or_create_multi(_keys, _creator_multi)
         assert _values == _values_expected
 
@@ -828,16 +841,16 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
 
 
 class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
-    backend = 'dogpile_backend_redis_advanced_hstore'
+    backend = "dogpile_backend_redis_advanced_hstore"
     config_args = {
         "arguments": {
-            'host': '127.0.0.1',
-            'port': 6379,
-            'db': 0,
-            'distributed_lock': True,
-            'lock_class': RedisDistributedLockProxyFatal,
-            'lock_timeout': 1,
-            'redis_expiration_time': 1,
+            "host": "127.0.0.1",
+            "port": 6379,
+            "db": 0,
+            "distributed_lock": True,
+            "lock_class": RedisDistributedLockProxyFatal,
+            "lock_timeout": 1,
+            "redis_expiration_time": 1,
         }
     }
 
@@ -847,13 +860,15 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
         # ensure this works instantly.
         def creator():
             return "creator value"
+
         assert reg.get_or_create("creator", creator) == "creator value"
 
         # can this work on a timeout?
         # sleep for 1 second longer than the timeout, so redis must expire
         def creator_sleep():
-            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            time.sleep(self.config_args["arguments"]["lock_timeout"] + 1)
             return "creator_sleep value"
+
         try:
             result = reg.get_or_create("creator_sleep", creator_sleep)
             raise ValueError("expected an error!")
@@ -864,14 +879,12 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
         reg = self._region()
 
         def _creator_multi(*_creator_keys):
-            time.sleep(self.config_args['arguments']['lock_timeout'] + 1)
+            time.sleep(self.config_args["arguments"]["lock_timeout"] + 1)
             # rval is an ordered list
             return [int(_k[-1]) for _k in _creator_keys]
 
         _values_expected = [1, 2, 3]
-        _keys = [str("creator_sleep_multi-%s" % i)
-                 for i in _values_expected
-                 ]
+        _keys = [str("creator_sleep_multi-%s" % i) for i in _values_expected]
         try:
             _values = reg.get_or_create_multi(_keys, _creator_multi)
             raise ValueError("expected an error!")
