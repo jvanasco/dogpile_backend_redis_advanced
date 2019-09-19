@@ -1,6 +1,6 @@
-v0.2.2 (unreleased)
+v0.2.2rc (unreleased)
+	2019.09.19 - black formatting
 	2019.05.31 - standardize imports to use `dogpile.util.compat.pickle` instead of our own detection
-
 
 v0.2.1
 	2019.04.26

@@ -14,36 +14,33 @@ class MsgpackSerializer(object):
     @classmethod
     def encode_datetime(cls, dt):
         """Serialize the given datetime.datetime object to a EPOCH seconds."""
-        return {'__datetime__': True,
-                '0': (dt - datetime.datetime(1970, 1, 1)).total_seconds()
-                }
+        return {
+            "__datetime__": True,
+            "0": (dt - datetime.datetime(1970, 1, 1)).total_seconds(),
+        }
 
     @classmethod
     def encode_date(cls, d):
         """Serialize the given datetime.date object to a JSON string."""
         # Default is ISO 8601 compatible (standard notation).
-        return {'__date__': True,
-                '0': "%04d%02d%02d" % (d.year, d.month, d.day),
-                }
+        return {"__date__": True, "0": "%04d%02d%02d" % (d.year, d.month, d.day)}
 
     @classmethod
     def encode_timedelta(cls, t):
         """Serialize the given datetime.timedelta object to some seconds."""
-        return {'__timedelta__': True,
-                '0': t.total_seconds(),
-                }
+        return {"__timedelta__": True, "0": t.total_seconds()}
 
     @classmethod
     def decode_datedata(cls, obj):
-        if b'__datetime__' in obj:
-            obj = datetime.datetime.fromtimestamp(obj['0'])
-        elif b'__date__' in obj:
+        if b"__datetime__" in obj:
+            obj = datetime.datetime.fromtimestamp(obj["0"])
+        elif b"__date__" in obj:
             # is is MUCH faster to use date() than strptime
             # obj = datetime.datetime.strptime(obj['0'], "%Y%m%d").date()
             d = obj["0"]
             obj = datetime.date(int(d[:4]), int(d[4:6]), int(d[6:8]))
-        elif b'__timedelta__' in obj:
-            obj = datetime.timedelta(seconds=obj['0'])
+        elif b"__timedelta__" in obj:
+            obj = datetime.timedelta(seconds=obj["0"])
         return obj
 
     @classmethod
@@ -75,59 +72,67 @@ class MsgpackSerializer(object):
         return v
 
 
-if __name__ == '__main__':
-    
+if __name__ == "__main__":
+
     import pprint
     import timeit
-    
-    sample_data = {'string': 'foo',
-                   'int': 100,
-                   'bool': True,
-                   'list': [1, 2, 3, 4, 5, ],
-                   'tuple': [1, 2, 3, 4, 5, ],
-                   'dict': {'a': 1,
-                            1: 'a',
-                            },
-                    'datetime': datetime.datetime.now(),
-                    'date': datetime.date.today(),
-                    'timedelta': datetime.timedelta(seconds=100),
-                    }
+
+    sample_data = {
+        "string": "foo",
+        "int": 100,
+        "bool": True,
+        "list": [1, 2, 3, 4, 5],
+        "tuple": [1, 2, 3, 4, 5],
+        "dict": {"a": 1, 1: "a"},
+        "datetime": datetime.datetime.now(),
+        "date": datetime.date.today(),
+        "timedelta": datetime.timedelta(seconds=100),
+    }
     encoded_msgpack = MsgpackSerializer.dumps(sample_data)
     loaded_msgpack = MsgpackSerializer.loads(encoded_msgpack)
-    
+
     print("==" * 40)
     print("MSGPACK")
     print("- " * 40)
     print("RAW")
-    pprint.pprint(sample_data) 
+    pprint.pprint(sample_data)
     print("- " * 40)
     print("ENCODED")
-    pprint.pprint(encoded_msgpack) 
+    pprint.pprint(encoded_msgpack)
     print("- " * 40)
     print("LOADED")
     pprint.pprint(loaded_msgpack)
     print("- " * 40)
-    
 
     encoded_pickle = pickle.dumps(sample_data)
     loaded_pickle = pickle.loads(encoded_pickle)
 
     iterations = 1000
 
-    time_msgpack_dumps = timeit.timeit('MsgpackSerializer.dumps(sample_data)','from __main__ import MsgpackSerializer, sample_data', number=iterations)
-    time_msgpack_loads = timeit.timeit('MsgpackSerializer.loads(encoded_msgpack)','from __main__ import MsgpackSerializer, encoded_msgpack', number=iterations)
+    time_msgpack_dumps = timeit.timeit(
+        "MsgpackSerializer.dumps(sample_data)",
+        "from __main__ import MsgpackSerializer, sample_data",
+        number=iterations,
+    )
+    time_msgpack_loads = timeit.timeit(
+        "MsgpackSerializer.loads(encoded_msgpack)",
+        "from __main__ import MsgpackSerializer, encoded_msgpack",
+        number=iterations,
+    )
 
-    time_pickle_dumps = timeit.timeit('pickle.dumps(sample_data)','from __main__ import pickle, sample_data', number=iterations)
-    time_pickle_loads = timeit.timeit('pickle.loads(encoded_pickle)','from __main__ import pickle, encoded_pickle', number=iterations)
-    
+    time_pickle_dumps = timeit.timeit(
+        "pickle.dumps(sample_data)",
+        "from __main__ import pickle, sample_data",
+        number=iterations,
+    )
+    time_pickle_loads = timeit.timeit(
+        "pickle.loads(encoded_pickle)",
+        "from __main__ import pickle, encoded_pickle",
+        number=iterations,
+    )
+
     print("iterations = %s" % iterations)
     print("MsgpackSerializer.dumps : %s" % time_msgpack_dumps)
     print("MsgpackSerializer.loads : %s" % time_msgpack_loads)
     print("pickle.dumps           : %s" % time_pickle_dumps)
     print("pickle.loads           : %s" % time_pickle_loads)
-    
-    
-    
-    
-    
-    

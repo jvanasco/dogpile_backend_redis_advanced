@@ -14,9 +14,7 @@ from collections import defaultdict
 
 import redis
 
-__all__ = ('RedisAdvancedBackend',
-           'RedisAdvancedHstoreBackend',
-           )
+__all__ = ("RedisAdvancedBackend", "RedisAdvancedHstoreBackend")
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -46,9 +44,13 @@ def default_dumps_factory():
     """
     _dumps = pickle.dumps
     _protocol = pickle.HIGHEST_PROTOCOL
+
     def default_dumps(v):
         return _dumps(v, _protocol)
+
     return default_dumps
+
+
 default_dumps = default_dumps_factory()
 
 
@@ -152,10 +154,10 @@ class RedisAdvancedBackend(RedisBackend):
     def __init__(self, arguments):
         arguments = arguments.copy()
         super(RedisAdvancedBackend, self).__init__(arguments)
-        self.loads = arguments.pop('loads', default_loads)
-        self.dumps = arguments.pop('dumps', default_dumps)
-        self.lock_class = arguments.pop('lock_class', None)
-        self.lock_prefix = "%s{0}" % arguments.pop('lock_prefix', '_lock')
+        self.loads = arguments.pop("loads", default_loads)
+        self.dumps = arguments.pop("dumps", default_dumps)
+        self.lock_class = arguments.pop("lock_class", None)
+        self.lock_prefix = "%s{0}" % arguments.pop("lock_prefix", "_lock")
 
     def get_mutex(self, key):
         if self.distributed_lock:
@@ -178,23 +180,17 @@ class RedisAdvancedBackend(RedisBackend):
             return []
         values = self.client.mget(keys)
         loads = self.loads  # potentially faster on large lists
-        return [loads(v) if v is not None else NO_VALUE
-                for v in values
-                ]
+        return [loads(v) if v is not None else NO_VALUE for v in values]
 
     def set(self, key, value):
         if self.redis_expiration_time:
-            self.client.setex(key, self.redis_expiration_time,
-                              self.dumps(value))
+            self.client.setex(key, self.redis_expiration_time, self.dumps(value))
         else:
             self.client.set(key, self.dumps(value))
 
     def set_multi(self, mapping):
         dumps = self.dumps  # potentially faster on large lists
-        mapping = dict(
-            (k, dumps(v))
-            for k, v in mapping.items()
-        )
+        mapping = dict((k, dumps(v)) for k, v in mapping.items())
         if not self.redis_expiration_time:
             self.client.mset(mapping)
         else:
@@ -252,7 +248,9 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     def __init__(self, arguments):
         arguments = arguments.copy()
         super(RedisAdvancedHstoreBackend, self).__init__(arguments)
-        self.redis_expiration_time_hash = arguments.pop('redis_expiration_time_hash', None)  # noqa
+        self.redis_expiration_time_hash = arguments.pop(
+            "redis_expiration_time_hash", None
+        )  # noqa
 
     def get_mutex(self, key):
         if isinstance(key, tuple):
@@ -319,24 +317,21 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             for k in _keys_hash:
                 # k[0] is our bucket
                 if k[0] not in _hashed:
-                    _hashed[k[0]] = {'keys': [],
-                                     'idx': [],
-                                     }
+                    _hashed[k[0]] = {"keys": [], "idx": []}
             for idx, k in enumerate(_keys_hash):
                 # note that we're using the _keys_hash_idx here
-                _hashed[k[0]]['keys'].append(k[1])
-                _hashed[k[0]]['idx'].append(_keys_hash_idx[idx])
+                _hashed[k[0]]["keys"].append(k[1])
+                _hashed[k[0]]["idx"].append(_keys_hash_idx[idx])
             for name in _hashed:
                 # redis.py command: `hmget(name, keys, *args)`
-                _values = self.client.hmget(name, _hashed[name]['keys'])
+                _values = self.client.hmget(name, _hashed[name]["keys"])
                 # build this back into the results in the right order
-                _values = zip(_hashed[name]['idx'], _values)
+                _values = zip(_hashed[name]["idx"], _values)
                 for (_idx, _v) in _values:
                     values[_idx] = _v
 
         loads = self.loads  # potentially faster on large lists
-        return [loads(v) if v is not None else NO_VALUE
-                for v in values]
+        return [loads(v) if v is not None else NO_VALUE for v in values]
 
     def set(self, key, value):
         if isinstance(key, tuple):
@@ -352,20 +347,17 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                     _set_expiry = True
 
             # redis.py command: `hset(name, key, value)`
-            self.client.hset(key[0], key[1],
-                             self.dumps(value))
+            self.client.hset(key[0], key[1], self.dumps(value))
             if _set_expiry:
                 # redis.py command: `expire(name, time)`
                 self.client.expire(key[0], self.redis_expiration_time)
         else:
             if self.redis_expiration_time:
                 # redis.py command: `setex(name, time, value)`
-                self.client.setex(key, self.redis_expiration_time,
-                                  self.dumps(value))
+                self.client.setex(key, self.redis_expiration_time, self.dumps(value))
             else:
                 # redis.py command: `set(name, value)`
-                self.client.set(key,
-                                self.dumps(value))
+                self.client.set(key, self.dumps(value))
 
     def set_multi(self, mapping):
         """
@@ -373,10 +365,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         """
         # encode
         dumps = self.dumps  # potentially faster on large lists
-        mapping = dict(
-            (k, dumps(v))
-            for k, v in mapping.items()
-        )
+        mapping = dict((k, dumps(v)) for k, v in mapping.items())
 
         # derive key types
         _keys_str = []
