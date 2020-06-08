@@ -1,5 +1,7 @@
 [![Build Status](https://travis-ci.org/jvanasco/dogpile_backend_redis_advanced.png)](https://travis-ci.org/jvanasco/dogpile_backend_redis_advanced)
 
+This package supports Python2 and Python3
+
 dogpile_backend_redis_advanced
 ==============================
 
