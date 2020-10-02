@@ -149,7 +149,7 @@ class RedisAdvancedBackend(RedisBackend):
      the backend uses `_lock`.
      .. versionadded:: 0.1.0
 
-     """
+    """
 
     def __init__(self, arguments):
         arguments = arguments.copy()

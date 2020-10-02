@@ -1,3 +1,8 @@
+unreleased
+	upgrade black
+	pre-commit
+
+
 v0.2.2
 	2020.06.08 - py2 and py3 tests pass
 	2019.09.19 - black formatting

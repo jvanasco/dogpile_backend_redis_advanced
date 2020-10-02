@@ -249,8 +249,7 @@ def raw_dumps(value):
 
 
 class _SerializedRaw_Test(_TestRedisConn, _GenericBackendTest):
-    """
-    """
+    """"""
 
     config_args = {
         "arguments": {
@@ -524,9 +523,9 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
         """
         When redis_expiration_time_hash is True, we should be setting the
         expiry on every hash set.
-        
+
         to test this, we're just going to loop this a few times
-        
+
         the loop should reset the expiry to 10 seconds, then sleep 1s, so it will
         always be >= 9.
         """
@@ -587,10 +586,10 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
     def test_expires_tracked(self):
         """
         When redis_expiration_time_hash is None, we should be setting the
-        expiry only if the key doesn't exist 
+        expiry only if the key doesn't exist
 
         to test this, we're just going to loop this a few times
-        
+
         the loop should reset the expiry to 3 seconds, then sleep 1s, so it will
         always be about 5
         """
@@ -732,8 +731,7 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
 
 
 class RedisDistributedLockProxy(object):
-    """base lock wrapper for testing
-    """
+    """base lock wrapper for testing"""
 
     mutex = None
 

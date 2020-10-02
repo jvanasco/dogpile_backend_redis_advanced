@@ -82,9 +82,9 @@ class SerializerMsgpackInt(object):
     @classmethod
     def dumps(cls, value):
         """'
-        strip out the payload before packing, 
+        strip out the payload before packing,
         save the timestamp, but convert it to an int() first
-        
+
         why?
         redis has precision on seconds, not microseconds
             1471111902.170488
