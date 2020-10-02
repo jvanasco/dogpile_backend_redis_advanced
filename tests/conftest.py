@@ -27,21 +27,14 @@ def is_unittest(obj):
         return False
 
 
-# pytest changed in 5.4.0; so things behave differently on py2 & py3
-# because of how tests are collected, this might work...
-if six.PY3:
-
-    def pytest_pycollect_makeitem(collector, name, obj):
-        if is_unittest(obj) and not obj.__name__.startswith("_"):
+def pytest_pycollect_makeitem(collector, name, obj):
+    if is_unittest(obj) and not obj.__name__.startswith("_"):
+        if six.PY3:
+            # pytest changed in 5.4.0; things behave differently on py2 & py3
             return UnitTestCase.from_parent(collector, name=name)
         else:
-            return []
-
-
-else:
-
-    def pytest_pycollect_makeitem(collector, name, obj):
-        if is_unittest(obj) and not obj.__name__.startswith("_"):
+            # pytest 4.6 is the last to support py2.7
+            # https://docs.pytest.org/en/stable/py27-py34-deprecation.html
             return UnitTestCase(name, parent=collector)
-        else:
-            return []
+    else:
+        return []
