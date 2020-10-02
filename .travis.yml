@@ -2,12 +2,12 @@ language: python
 python:
  - "2.7"
  - "3.6"
- - "3.7"
 
 install:
   - pip install -e .
   - pip install tox-travis
   - pip install tox
+  - pip install dogpile.cache<1.0.0
   
 script: tox
 
