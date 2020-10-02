@@ -69,6 +69,7 @@ setup(
         "msgpack-python",
         "dogpile.cache<1.0.0",
         "redis",
+        "six",
     ],
     cmdclass={"test": PyTest},
 )
