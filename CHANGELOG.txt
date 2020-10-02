@@ -1,6 +1,7 @@
 unreleased
 	upgrade black
 	pre-commit
+	updated requirements because 1.0.0 of dogpile.cache is py3 only
 
 
 v0.2.2
