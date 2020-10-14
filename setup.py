@@ -41,6 +41,25 @@ try:
 except:
     pass
 
+install_requires = [
+    "redis",
+    "dogpile.cache<1.0.0",
+]
+tests_require = [
+    "pytest",
+    "pytest-cov",
+    "mock",
+    "msgpack-python",
+    "dogpile.cache<1.0.0",
+    "redis",
+    "six",
+]
+testing_extras = [
+    "flake8",
+    "pytest" "tox",
+]
+
+
 setup(
     name="dogpile_backend_redis_advanced",
     version=VERSION,
@@ -61,15 +80,10 @@ setup(
     license="BSD",
     packages=find_packages(".", exclude=["tests*"]),
     zip_safe=False,
-    install_requires=["redis", "dogpile.cache<1.0.0"],
-    tests_require=[
-        "pytest",
-        "pytest-cov",
-        "mock",
-        "msgpack-python",
-        "dogpile.cache<1.0.0",
-        "redis",
-        "six",
-    ],
+    install_requires=install_requires,
+    tests_require=tests_require,
+    extras_require={
+        "testing": testing_extras,
+    },
     cmdclass={"test": PyTest},
 )
