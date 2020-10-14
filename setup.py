@@ -56,7 +56,7 @@ tests_require = [
 ]
 testing_extras = [
     "flake8",
-    "pytest" "tox",
+    "tox",
 ]
 
 
