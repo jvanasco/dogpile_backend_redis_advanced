@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jvanasco/dogpile_backend_redis_advanced.png)](https://travis-ci.org/jvanasco/dogpile_backend_redis_advanced)
+![Python package](https://github.com/jvanasco/dogpile_backend_redis_advanced/workflows/Python%20package/badge.svg)
 
 This package supports Python2 and Python3
 
