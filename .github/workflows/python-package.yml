@@ -44,5 +44,3 @@ jobs:
     - name: Test with pytest
       run: |
         tox -e py -- ${{ matrix.pytest-args }}
-      env:
-        DOGPILE_REDIS_PORT: 6379
