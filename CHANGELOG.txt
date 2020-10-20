@@ -1,4 +1,5 @@
-unreleased
+v0.3.0
+	packaging fixes
 	upgrade black
 	pre-commit
 	updated requirements because 1.0.0 of dogpile.cache is py3 only
