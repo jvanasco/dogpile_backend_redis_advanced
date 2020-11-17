@@ -26,20 +26,16 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-v = open(
-    os.path.join(
-        os.path.dirname(__file__), "dogpile_backend_redis_advanced", "__init__.py"
-    )
-)
+HERE = os.path.abspath(os.path.dirname(__file__))
+
+v = open(os.path.join(HERE, "dogpile_backend_redis_advanced", "__init__.py"))
 VERSION = re.compile(r'.*__version__ = "(.*?)"', re.S).match(v.read()).group(1)
 v.close()
 
 long_description = description = "Advanced Redis plugins for `dogpile.cache`."
-try:
-    README = os.path.join(os.path.dirname(__file__), "README.md")
-    long_description = open(README).read()
-except:
-    pass
+with open(os.path.join(HERE, "README.md")) as fp:
+    long_description = fp.read()
+
 
 install_requires = [
     "redis",
