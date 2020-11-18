@@ -111,7 +111,6 @@ Another way to make **Redis** more efficient is to use hash storage.
 
 Let's say you have a lot of keys that look like this:
 
-
 	region.set("user-15|posts", x)
 	region.set("user-15|friends", y)
 	region.set("user-15|profile", z)
