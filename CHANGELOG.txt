@@ -1,3 +1,7 @@
+unreleased
+	moving ancillary files into /experiments
+	committed some untracked experiments
+
 v0.3.0
 	packaging fixes
 	upgrade black

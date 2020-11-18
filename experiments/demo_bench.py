@@ -3,20 +3,16 @@ from __future__ import print_function
 """
 This script demonstrates how some caching is done.
 
-It will spin-up a redis instance, cache to it, and then pull some sample keys/statistics.  In the code below, hashes are stored with 100 elements; however the sample keys will only have the first 10 fields.
+It will spin-up a Redis instance, cache to it, and then pull some sample
+keys/statistics.
 
-Then it flushes the db, kills the instance, and repeats with another caching strategy
+In the code below, hashes are stored with 100 elements; however the sample keys
+will only have the first 10 fields.
 
-The results are printed below
+Then it flushes the db, kills the instance, and repeats with another caching
+strategy
 
-
-
-
-
-
-
-
-
+The results are printed below.
 """
 
 from dogpile.cache import make_region
@@ -86,7 +82,7 @@ class SerializerMsgpackInt(object):
         save the timestamp, but convert it to an int() first
 
         why?
-        redis has precision on seconds, not microseconds
+        Redis has precision on seconds, not microseconds
             1471111902.170488
             1471111902
         """
@@ -545,7 +541,6 @@ if __name__ == "__main__":
     kill_redis()
 
     pprint.pprint(test_results)
-    if False:
-        open("results-%s.txt" % _demo_process_id, "w").write(
-            pprint.pformat(test_results)
-        )
+    open("demo_bench-results-%s.txt" % _demo_process_id, "w").write(
+        pprint.pformat(test_results)
+    )
