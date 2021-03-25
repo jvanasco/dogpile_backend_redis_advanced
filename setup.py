@@ -28,7 +28,7 @@ class PyTest(TestCommand):
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
-v = open(os.path.join(HERE, "dogpile_backend_redis_advanced", "__init__.py"))
+v = open(os.path.join(HERE, "src", "dogpile_backend_redis_advanced", "__init__.py"))
 VERSION = re.compile(r'.*__version__ = "(.*?)"', re.S).match(v.read()).group(1)
 v.close()
 
@@ -75,7 +75,11 @@ setup(
     author_email="jonathan@findmeon.com",
     url="https://github.com/jvanasco/dogpile_backend_redis_advanced",
     license="BSD",
-    packages=find_packages(".", exclude=["tests*"]),
+    packages=find_packages(
+        where="src",
+    ),
+    package_dir={"": "src"},
+    include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
     tests_require=tests_require,

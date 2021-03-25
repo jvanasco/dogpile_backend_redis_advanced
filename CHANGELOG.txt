@@ -1,4 +1,7 @@
-unreleased
+v0.3.2
+	packaging fixes
+
+v0.3.1 
 	moving ancillary files into /experiments
 	committed some untracked experiments
 
