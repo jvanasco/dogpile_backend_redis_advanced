@@ -6,13 +6,21 @@ Provides backends for talking to `Redis <http://redis.io>`_.
 
 """
 from __future__ import absolute_import
-from dogpile.cache.api import NO_VALUE
-from dogpile.cache.backends.redis import RedisBackend
-from ..._compat import pickle, u
 
+# stdlib
 from collections import defaultdict
 
+# pypi
+from dogpile.cache.api import NO_VALUE
+from dogpile.cache.backends.redis import RedisBackend
 import redis
+
+# local
+from ..._compat import pickle, u
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 __all__ = ("RedisAdvancedBackend", "RedisAdvancedHstoreBackend")
 

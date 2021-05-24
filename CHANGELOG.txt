@@ -1,5 +1,6 @@
 v0.3.3
-	allow newer dogpile.cache on PY3
+	improving py3 support
+	some prep for py2/py3 on "dogpile.cache>=1.0"
 
 v0.3.2
 	packaging fixes
