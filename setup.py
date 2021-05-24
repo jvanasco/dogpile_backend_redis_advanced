@@ -39,14 +39,17 @@ with open(os.path.join(HERE, "README.md")) as fp:
 
 install_requires = [
     "redis",
-    "dogpile.cache<1.0.0",
 ]
+if sys.version_info[0] >= 3:
+    install_requires.append("dogpile.cache")
+else:
+    install_requires.append("dogpile.cache<1.0")
+
 tests_require = [
     "pytest",
     "pytest-cov",
     "mock",
     "msgpack-python",
-    "dogpile.cache<1.0.0",
     "redis",
     "six",
 ]

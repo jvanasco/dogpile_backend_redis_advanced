@@ -1,3 +1,6 @@
+v0.3.3
+	allow newer dogpile.cache on PY3
+
 v0.3.2
 	packaging fixes
 
