@@ -38,17 +38,16 @@ with open(os.path.join(HERE, "README.md")) as fp:
 
 
 install_requires = [
+    "dogpile.cache<1.0",
     "redis",
-    "dogpile.cache<1.0.0",
+    "six",
 ]
-tests_require = [
+
+tests_require = install_requires + [
     "pytest",
     "pytest-cov",
     "mock",
     "msgpack-python",
-    "dogpile.cache<1.0.0",
-    "redis",
-    "six",
 ]
 testing_extras = [
     "flake8",
