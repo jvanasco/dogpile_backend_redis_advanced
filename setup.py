@@ -43,13 +43,11 @@ install_requires = [
     "six",
 ]
 
-tests_require = [
+tests_require = install_requires + [
     "pytest",
     "pytest-cov",
     "mock",
     "msgpack-python",
-    "redis",
-    "six",
 ]
 testing_extras = [
     "flake8",
