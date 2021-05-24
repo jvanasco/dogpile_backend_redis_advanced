@@ -39,6 +39,7 @@ with open(os.path.join(HERE, "README.md")) as fp:
 
 install_requires = [
     "redis",
+    "six",
 ]
 if sys.version_info[0] >= 3:
     install_requires.append("dogpile.cache")
