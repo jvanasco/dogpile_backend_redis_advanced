@@ -9,14 +9,20 @@ from __future__ import absolute_import
 
 # stdlib
 from collections import defaultdict
+import pickle
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 # pypi
-from dogpile.cache.api import NO_VALUE
-from dogpile.cache.backends.redis import RedisBackend
-import redis
+from dogpile.cache.api import NO_VALUE  # type: ignore[import]
+from dogpile.cache.backends.redis import RedisBackend  # type: ignore[import]
 
-# local
-from ..._compat import pickle, u
+# only needed for testing
+# import redis
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,10 +34,10 @@ __all__ = ("RedisAdvancedBackend", "RedisAdvancedHstoreBackend")
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-default_loads = pickle.loads
+default_loads: Callable = pickle.loads
 
 
-def default_dumps_factory():
+def default_dumps_factory() -> Callable:
     """
     optimized for the cpython compiler. shaves a tiny bit off.
     this turns 'pickle_dumps' into a local variable to the dump function.
@@ -159,7 +165,7 @@ class RedisAdvancedBackend(RedisBackend):
 
     """
 
-    def __init__(self, arguments):
+    def __init__(self, arguments: Dict):
         arguments = arguments.copy()
         super(RedisAdvancedBackend, self).__init__(arguments)
         self.loads = arguments.pop("loads", default_loads)
@@ -167,9 +173,9 @@ class RedisAdvancedBackend(RedisBackend):
         self.lock_class = arguments.pop("lock_class", None)
         self.lock_prefix = "%s{0}" % arguments.pop("lock_prefix", "_lock")
 
-    def get_mutex(self, key):
+    def get_mutex(self, key: str) -> Optional[Any]:
         if self.distributed_lock:
-            _key = u(self.lock_prefix).format(key)
+            _key = self.lock_prefix.format(key)
             _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
             if self.lock_class:
                 return self.lock_class(_mutex)
@@ -177,26 +183,26 @@ class RedisAdvancedBackend(RedisBackend):
         else:
             return None
 
-    def get(self, key):
+    def get(self, key: str) -> Any:
         value = self.client.get(key)
         if value is None:
             return NO_VALUE
         return self.loads(value)
 
-    def get_multi(self, keys):
+    def get_multi(self, keys: Tuple[str]) -> List[Any]:
         if not keys:
             return []
         values = self.client.mget(keys)
         loads = self.loads  # potentially faster on large lists
         return [loads(v) if v is not None else NO_VALUE for v in values]
 
-    def set(self, key, value):
+    def set(self, key: str, value: Any) -> None:
         if self.redis_expiration_time:
             self.client.setex(key, self.redis_expiration_time, self.dumps(value))
         else:
             self.client.set(key, self.dumps(value))
 
-    def set_multi(self, mapping):
+    def set_multi(self, mapping: Dict) -> None:
         dumps = self.dumps  # potentially faster on large lists
         mapping = dict((k, dumps(v)) for k, v in mapping.items())
         if not self.redis_expiration_time:
@@ -253,20 +259,20 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
     """
 
-    def __init__(self, arguments):
+    def __init__(self, arguments: Dict):
         arguments = arguments.copy()
         super(RedisAdvancedHstoreBackend, self).__init__(arguments)
         self.redis_expiration_time_hash = arguments.pop(
             "redis_expiration_time_hash", None
         )  # noqa
 
-    def get_mutex(self, key):
+    def get_mutex(self, key: str) -> Optional[Any]:
         if isinstance(key, tuple):
             # key can be a tuple
             key = ",".join(key)
         if self.distributed_lock:
             # redis.py command: `lock(name, timeout=None, sleep=0.1)`
-            _key = u(self.lock_prefix).format(key)
+            _key = self.lock_prefix.format(key)
             _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
             if self.lock_class:
                 return self.lock_class(_mutex)
@@ -274,7 +280,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         else:
             return None
 
-    def get(self, key):
+    def get(self, key: str) -> Any:
         if isinstance(key, tuple):
             # redis.py command: `hget(hashname, key)`
             value = self.client.hget(key[0], key[1])
@@ -285,7 +291,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             return NO_VALUE
         return self.loads(value)
 
-    def get_multi(self, keys):
+    def get_multi(self, keys: Tuple[str]) -> List[Any]:
         """
         * figure out which are string keys vs hashes, process 2 queues
         * for hashes, bucket into multiple requests
@@ -294,10 +300,10 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         position in a dict.
         """
         # scoping
-        _keys_str = []
-        _keys_str_idx = []
-        _keys_hash = []
-        _keys_hash_idx = []
+        _keys_str: List[str] = []
+        _keys_str_idx: List[int] = []
+        _keys_hash: List[str] = []
+        _keys_hash_idx: List[int] = []
 
         # initialize this list
         values = [None] * len(keys)
@@ -321,7 +327,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
         # group and batch the hashed as needed
         if _keys_hash:
-            _hashed = {}
+            _hashed: Dict[str, Dict[str, List]] = {}
             for k in _keys_hash:
                 # k[0] is our bucket
                 if k[0] not in _hashed:
@@ -341,7 +347,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         loads = self.loads  # potentially faster on large lists
         return [loads(v) if v is not None else NO_VALUE for v in values]
 
-    def set(self, key, value):
+    def set(self, key: str, value: Any) -> None:
         if isinstance(key, tuple):
             _set_expiry = None
             if self.redis_expiration_time_hash is True:
@@ -367,7 +373,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 # redis.py command: `set(name, value)`
                 self.client.set(key, self.dumps(value))
 
-    def set_multi(self, mapping):
+    def set_multi(self, mapping: Dict) -> None:
         """
         we'll always use a pipeline for this class
         """
@@ -378,7 +384,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         # derive key types
         _keys_str = []
         _keys_hash = []
-        _hash_bucketed = None
+        _hash_bucketed: Optional[Dict] = None
         for _k in mapping.keys():
             if isinstance(_k, tuple):
                 _keys_hash.append(_k)
@@ -429,7 +435,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         # run the pipeline
         pipe.execute()
 
-    def delete(self, key):
+    def delete(self, key: str) -> None:
         if isinstance(key, tuple):
             # redis.py command: hdel(`name, *keys)`
             self.client.hdel(key[0], key[1])
@@ -437,13 +443,13 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             # redis.py command: delete(*names)`
             self.client.delete(key)
 
-    def delete_multi(self, keys):
+    def delete_multi(self, keys: Tuple[str]) -> None:
         """
         In order to handle multiple deletes, we need to inspect the keys and
         batch them into the appropriate method.  This has a negligible cost.
         """
-        _keys = []
-        _keys_hash = []
+        _keys: List = []
+        _keys_hash: List = []
         for k in keys:
             if isinstance(k, tuple):
                 _keys_hash.append(k)
@@ -453,7 +459,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             # redis.py command: delete(*names)`
             self.client.delete(*_keys)
         if _keys_hash:
-            _hashed = {k[0]: [] for k in _keys_hash}
+            _hashed: Dict[str, List] = {k[0]: [] for k in _keys_hash}
             for k in _keys_hash:
                 _hashed[k[0]].append(k[1])
             for name in _hashed:
