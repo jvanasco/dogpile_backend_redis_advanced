@@ -20,9 +20,6 @@ import pytest
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = int(os.getenv("DOGPILE_REDIS_PORT", "6379"))
 
-COMPAT_PY3 = True if (sys.version_info > (3, 0)) else False
-
-
 # import to register the plugin
 import dogpile_backend_redis_advanced
 
@@ -195,11 +192,8 @@ def my_loads(value):
     that require the ability to set/read raw data.
     we could disable that test, but this workaround supports it.
     """
-    if COMPAT_PY3:
-        # this is True for backward compatibility
-        value = msgpack.unpackb(value, use_list=False, raw=False)
-    else:
-        value = msgpack.unpackb(value, use_list=False)
+    # this is True for backward compatibility
+    value = msgpack.unpackb(value, use_list=False, raw=False)
     if isinstance(value, tuple):
         return CachedValue(*value)
     return value
@@ -233,11 +227,7 @@ def raw_loads(value):
     """'
     we need to unpack the value and stash it into a CachedValue
     """
-    if COMPAT_PY3:
-        # this is True for backward compatibility
-        value = msgpack.unpackb(value, use_list=False, raw=False)
-    else:
-        value = msgpack.unpackb(value, use_list=False)
+    value = msgpack.unpackb(value, use_list=False, raw=False)
     return CachedValue(value, {"ct": time.time(), "v": value_version})
 
 
