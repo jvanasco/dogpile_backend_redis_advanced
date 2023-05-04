@@ -7,9 +7,6 @@ import logging.config
 logging.config.fileConfig("log_tests.ini")
 
 
-import six
-
-
 def is_unittest(obj):
     """Is obj a subclass of unittest.TestCase?
 
@@ -29,12 +26,9 @@ def is_unittest(obj):
 
 def pytest_pycollect_makeitem(collector, name, obj):
     if is_unittest(obj) and not obj.__name__.startswith("_"):
-        if six.PY3:
-            # pytest changed in 5.4.0; things behave differently on py2 & py3
-            return UnitTestCase.from_parent(collector, name=name)
-        else:
-            # pytest 4.6 is the last to support py2.7
-            # https://docs.pytest.org/en/stable/py27-py34-deprecation.html
-            return UnitTestCase(name, parent=collector)
+        # pytest changed in 5.4.0; things behave differently on py2 & py3
+        return UnitTestCase.from_parent(collector, name=name)
+        # pytest 4.6 is the last to support py2.7
+        # https://docs.pytest.org/en/stable/py27-py34-deprecation.html
     else:
         return []
