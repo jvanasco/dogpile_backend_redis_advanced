@@ -308,7 +308,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         # initialize this list
         values = [None] * len(keys)
 
-        for (_idx, _k) in enumerate(keys):
+        for _idx, _k in enumerate(keys):
             if isinstance(_k, tuple):
                 _keys_hash.append(_k)
                 _keys_hash_idx.append(_idx)
@@ -322,7 +322,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             _values = self.client.mget(_keys_str)
             # build this back into the results in the right order
             _values = zip(_keys_str_idx, _values)
-            for (_idx, _v) in _values:
+            for _idx, _v in _values:
                 values[_idx] = _v
 
         # group and batch the hashed as needed
@@ -341,7 +341,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _values = self.client.hmget(name, _hashed[name]["keys"])
                 # build this back into the results in the right order
                 _values = zip(_hashed[name]["idx"], _values)
-                for (_idx, _v) in _values:
+                for _idx, _v in _values:
                     values[_idx] = _v
 
         loads = self.loads  # potentially faster on large lists

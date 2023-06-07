@@ -90,7 +90,6 @@ print(dis.dis(default_dumps_c))
 
 
 def initialize_dogpile():
-
     global REGIONS
 
     REGIONS["pickle"] = make_region().configure(
@@ -256,7 +255,6 @@ if __name__ == "__main__":
     redis_server = None
 
     for _region_name in list(REGIONS.keys()):
-
         test_results[_region_name] = {}
         if _region_name not in REGIONS:
             raise ValueError("invalid region")

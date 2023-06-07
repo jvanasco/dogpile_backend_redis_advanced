@@ -169,7 +169,6 @@ class PickleSerializer(object):
 
 
 if __name__ == "__main__":
-
     results = {}
     for test in ("datetime", "no_datetime"):
         results[test] = {}
