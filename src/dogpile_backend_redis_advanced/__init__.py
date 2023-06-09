@@ -1,6 +1,6 @@
 from dogpile.cache.region import register_backend  # type: ignore[import]
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 # name, modulepath, objname
 register_backend(
