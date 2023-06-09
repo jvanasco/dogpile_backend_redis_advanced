@@ -1,3 +1,6 @@
+v0.4.1
+    missed py.typed
+
 v0.4.0
     initial typing support
     drop py2
