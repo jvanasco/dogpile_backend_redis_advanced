@@ -1,4 +1,4 @@
-from dogpile.cache.region import register_backend  # type: ignore[import]
+from dogpile.cache.region import register_backend
 
 __version__ = "0.4.1"
 

@@ -18,8 +18,8 @@ from typing import Optional
 from typing import Tuple
 
 # pypi
-from dogpile.cache.api import NO_VALUE  # type: ignore[import]
-from dogpile.cache.backends.redis import RedisBackend  # type: ignore[import]
+from dogpile.cache.api import NO_VALUE
+from dogpile.cache.backends.redis import RedisBackend
 
 # only needed for testing
 # import redis
