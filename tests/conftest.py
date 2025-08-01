@@ -1,8 +1,9 @@
-from _pytest.unittest import UnitTestCase
-import sys
 import logging
-
 import logging.config
+import sys
+
+from _pytest.unittest import UnitTestCase
+
 
 logging.config.fileConfig("log_tests.ini")
 
@@ -20,7 +21,7 @@ def is_unittest(obj):
         return issubclass(obj, unittest.TestCase)
     except KeyboardInterrupt:
         raise
-    except:
+    except Exception:
         return False
 
 

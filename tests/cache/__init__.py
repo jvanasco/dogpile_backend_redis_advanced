@@ -1,11 +1,6 @@
-from functools import wraps
-import pytest
-import configparser
-import io
 import re
 import sys
 import time
-
 
 # this was previously in dogpile.util.compat
 win32 = sys.platform.startswith("win")

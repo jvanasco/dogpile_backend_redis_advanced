@@ -1,27 +1,35 @@
-from dogpile.cache.api import CachedValue, NO_VALUE
+import os
+from threading import Lock
+from threading import Thread
+import time
+from typing import Optional
+import unittest
+from unittest import TestCase
+
+# pypi
+from dogpile.cache.api import CachedValue
+from dogpile.cache.api import NO_VALUE
 from dogpile.cache.region import _backend_loader
 from dogpile.cache.region import value_version
-from ._fixtures import _GenericBackendTest, _GenericMutexTest, _GenericBackendFixture
-from . import eq_, assert_raises_message
-
-from threading import Thread, Lock
-from unittest import TestCase
-import os
-import pdb
-import time
-import unittest
-import sys
-
-
-from mock import patch, Mock
+from mock import Mock
+from mock import patch
 import msgpack
 import pytest
+import redis
+
+# local
+import dogpile_backend_redis_advanced  # noqa: F401
+from . import eq_
+from ._fixtures import _GenericBackendFixture
+from ._fixtures import _GenericBackendTest
+from ._fixtures import _GenericMutexTest
+
+# ==============================================================================
 
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = int(os.getenv("DOGPILE_REDIS_PORT", "6379"))
 
 # import to register the plugin
-import dogpile_backend_redis_advanced
 
 """
 ABOUT THESE TESTS
@@ -29,7 +37,7 @@ ABOUT THESE TESTS
 Compatibility Tests
 ===
 
-Tests that have `_Compatibility_` in the name are pegged to upstream tests. They 
+Tests that have `_Compatibility_` in the name are pegged to upstream tests. They
 ensure compatibility with the core dogpile cache routines
 
 * RedisAdvanced_Compatibility_Test
@@ -38,7 +46,6 @@ ensure compatibility with the core dogpile cache routines
 * RedisAdvancedHstore_Compatibility_Test
 * RedisAdvancedHstore_Compatibility_DistributedMutexTest
 * RedisAdvancedHstore_Compatibility_ConnectionTest
-
 
 SerializedAlternate_Test
 ===
@@ -50,9 +57,7 @@ HstoreTests
 
 These test advanced support for hstore
 
-
 tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedAlternate_Test
-
 
 """
 
@@ -61,12 +66,13 @@ class _TestRedisConn(object):
     @classmethod
     def _check_backend_available(cls, backend):
         try:
-            client = backend._create_client()
-            client.set("x", "y")
-            # on py3k it appears to return b"y"
-            assert client.get("x").decode("ascii") == "y"
-            client.delete("x")
-        except:
+            # this does not return
+            backend._create_client()
+            backend.set("x", "y")
+            # on py3k it appears to return "y"
+            assert backend.get("x") == "y"
+            backend.delete("x")
+        except Exception as excepted:
             pytest.skip(
                 "redis is not running or " "otherwise not functioning correctly"
             )
@@ -99,6 +105,7 @@ class _Compatibility_DistributedMutexTest(_TestRedisConn, _GenericMutexTest):
             "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
+            "thread_local_lock": False,
         }
     }
 
@@ -120,6 +127,8 @@ class RedisAdvancedHstore_Compatibility_DistributedMutexTest(
 
 @patch("redis.StrictRedis", autospec=True)
 class _Compatibility_ConnectionTest(TestCase):
+    backend: str
+
     @classmethod
     def setup_class(cls):
         cls.backend_cls = _backend_loader.load(cls.backend)
@@ -137,12 +146,24 @@ class _Compatibility_ConnectionTest(TestCase):
 
     def test_connect_with_defaults(self, MockStrictRedis):
         # The defaults, used if keys are missing from the arguments dict.
-        arguments = {"host": "localhost", "password": None, "port": 6379, "db": 0}
-        self._test_helper(MockStrictRedis, arguments, {})
+        arguments = {
+            "host": "localhost",
+            "port": 6379,
+            "db": 0,
+        }
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
 
     def test_connect_with_basics(self, MockStrictRedis):
-        arguments = {"host": "127.0.0.1", "password": None, "port": 6379, "db": 0}
-        self._test_helper(MockStrictRedis, arguments)
+        arguments = {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "db": 0,
+        }
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
 
     def test_connect_with_password(self, MockStrictRedis):
         arguments = {
@@ -151,17 +172,65 @@ class _Compatibility_ConnectionTest(TestCase):
             "port": 6379,
             "db": 0,
         }
+        expected = arguments.copy()
+        expected.update({"username": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
+
+    def test_connect_with_username_and_password(self, MockStrictRedis):
+        arguments = {
+            "host": "127.0.0.1",
+            "username": "redis",
+            "password": "some password",
+            "port": 6379,
+            "db": 0,
+        }
         self._test_helper(MockStrictRedis, arguments)
 
     def test_connect_with_socket_timeout(self, MockStrictRedis):
         arguments = {
+            "socket_timeout": 0.5,
             "host": "127.0.0.1",
             "port": 6379,
-            "socket_timeout": 0.5,
-            "password": None,
             "db": 0,
         }
-        self._test_helper(MockStrictRedis, arguments)
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
+
+    def test_connect_with_socket_connect_timeout(self, MockStrictRedis):
+        arguments = {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "socket_timeout": 1.0,
+            "db": 0,
+        }
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
+
+    def test_connect_with_socket_keepalive(self, MockStrictRedis):
+        arguments = {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "socket_keepalive": True,
+            "db": 0,
+        }
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
+
+    def test_connect_with_socket_keepalive_options(self, MockStrictRedis):
+        arguments = {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "socket_keepalive": True,
+            # 4 = socket.TCP_KEEPIDLE
+            "socket_keepalive_options": {4, 10.0},
+            "db": 0,
+        }
+        expected = arguments.copy()
+        expected.update({"username": None, "password": None})
+        self._test_helper(MockStrictRedis, expected, arguments)
 
     def test_connect_with_connection_pool(self, MockStrictRedis):
         pool = Mock()
@@ -172,6 +241,26 @@ class _Compatibility_ConnectionTest(TestCase):
     def test_connect_with_url(self, MockStrictRedis):
         arguments = {"url": "redis://redis:password@127.0.0.1:6379/0"}
         self._test_helper(MockStrictRedis.from_url, arguments)
+
+    def test_extra_arbitrary_args(self, MockStrictRedis):
+        arguments = {
+            "url": "redis://redis:password@127.0.0.1:6379/0",
+            "connection_kwargs": {
+                "ssl": True,
+                "encoding": "utf-8",
+                "new_redis_arg": 50,
+            },
+        }
+        self._test_helper(
+            MockStrictRedis.from_url,
+            {
+                "url": "redis://redis:password@127.0.0.1:6379/0",
+                "ssl": True,
+                "encoding": "utf-8",
+                "new_redis_arg": 50,
+            },
+            arguments,
+        )
 
 
 class RedisAdvanced_Compatibility_ConnectionTest(_Compatibility_ConnectionTest):
@@ -432,7 +521,7 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
 
 
 class HstoreTest_Expires_Hash(HstoreTest):
-    redis_expiration_time_hash = None
+    redis_expiration_time_hash: Optional[bool] = None
     config_args = {
         "arguments": {
             "host": REDIS_HOST,
@@ -458,7 +547,10 @@ class HstoreTest_Expires_Hash(HstoreTest):
 
         # we don't set ttl on `redis_expiration_time_hash = False`
         if self.redis_expiration_time_hash is not False:
-            ttl = backend.client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(key_hash[0])
+            assert ttl >= 1, "ttl should be larger"
+
+            ttl = backend.writer_client.ttl(key_hash[0])
             assert ttl >= 1, "ttl should be larger"
 
         backend.delete(key_hash)
@@ -490,7 +582,10 @@ class HstoreTest_Expires_Hash(HstoreTest):
             for k in keys_mixed:
                 if isinstance(k, tuple):
                     k = k[0]
-                ttl = backend.client.ttl(k)
+                ttl = backend.reader_client.ttl(k)
+                assert ttl >= 0, "ttl should be larger"
+
+                ttl = backend.writer_client.ttl(k)
                 assert ttl >= 0, "ttl should be larger"
 
         # delete them all
@@ -525,7 +620,10 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
             backend.set(key_hash, cloud_value)
             eq_(backend.get(key_hash), cloud_value)
 
-            ttl = backend.client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(key_hash[0])
+            assert ttl >= 9, "ttl should be larger"
+
+            ttl = backend.writer_client.ttl(key_hash[0])
             assert ttl >= 9, "ttl should be larger"
 
             time.sleep(1)
@@ -553,7 +651,10 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
                 key = keys_mixed[idx]
                 if isinstance(key, tuple):
                     key = key[0]
-                    ttl = backend.client.ttl(key)
+                    ttl = backend.reader_client.ttl(key)
+                    assert ttl >= 9, "ttl should be larger"
+
+                    ttl = backend.writer_client.ttl(key)
                     assert ttl >= 9, "ttl should be larger"
 
             time.sleep(1)
@@ -590,7 +691,11 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
             eq_(backend.get(key_hash), cloud_value)
             time.sleep(1)
 
-        ttl = backend.client.ttl(key_hash[0])
+        ttl = backend.reader_client.ttl(key_hash[0])
+        assert ttl <= 6, "ttl should be <= 6"
+        assert ttl >= 4, "ttl should be <= 4"
+
+        ttl = backend.writer_client.ttl(key_hash[0])
         assert ttl <= 6, "ttl should be <= 6"
         assert ttl >= 4, "ttl should be <= 4"
 
@@ -620,7 +725,11 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
         for key in keys_mixed:
             if isinstance(key, tuple):
                 key = key[0]
-                ttl = backend.client.ttl(key)
+                ttl = backend.reader_client.ttl(key)
+                assert ttl <= 6, "ttl should be <= 6"
+                assert ttl >= 4, "ttl should be <= 4"
+
+                ttl = backend.writer_client.ttl(key)
                 assert ttl <= 6, "ttl should be <= 6"
                 assert ttl >= 4, "ttl should be <= 4"
 
@@ -650,7 +759,10 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
             backend.set(key_hash, cloud_value)
             eq_(backend.get(key_hash), cloud_value)
 
-            ttl = backend.client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(key_hash[0])
+            assert ttl == -1, "ttl should be -1"
+
+            ttl = backend.writer_client.ttl(key_hash[0])
             assert ttl == -1, "ttl should be -1"
 
         backend.delete(key_hash)
@@ -678,7 +790,10 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
             for key in keys_mixed:
                 if isinstance(key, tuple):
                     key = key[0]
-                    ttl = backend.client.ttl(key)
+                    ttl = backend.reader_client.ttl(key)
+                    assert ttl == -1, "ttl should be -1"
+
+                    ttl = backend.writer_client.ttl(key)
                     assert ttl == -1, "ttl should be -1"
 
             time.sleep(1)
@@ -694,6 +809,7 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
             "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
+            "thread_local_lock": False,
             "lock_prefix": "_lk-",
         }
     }
@@ -710,7 +826,7 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTest):
 
         def creator():
             lock_key = self.config_args["arguments"]["lock_prefix"] + key
-            locked = reg.backend.client.get(lock_key)
+            locked = reg.backend.writer_client.get(lock_key)
             assert locked and locked is not NO_VALUE
             return value
 
@@ -780,7 +896,8 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTest):
             "port": 6379,
             "db": 0,
             "distributed_lock": True,
-            "lock_class": RedisDistributedLockProxySilent,
+            "thread_local_lock": False,
+            # "lock_class": RedisDistributedLockProxySilent,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }
@@ -836,7 +953,8 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTest):
             "port": 6379,
             "db": 0,
             "distributed_lock": True,
-            "lock_class": RedisDistributedLockProxyFatal,
+            "thread_local_lock": False,
+            # "lock_class": RedisDistributedLockProxyFatal,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }

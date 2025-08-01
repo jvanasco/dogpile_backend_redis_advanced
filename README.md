@@ -1,9 +1,5 @@
 ![Python package](https://github.com/jvanasco/dogpile_backend_redis_advanced/workflows/Python%20package/badge.svg)
 
-This package supports Python2 and Python3
-
-This package DOES NOT support `dogpile.cache>=1.0`. Support is planned, but there have been several major API changes that are incompatible.
-
 dogpile_backend_redis_advanced
 ==============================
 
