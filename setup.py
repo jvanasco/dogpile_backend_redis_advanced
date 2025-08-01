@@ -39,7 +39,7 @@ with open(os.path.join(HERE, "README.md")) as fp:
 
 
 install_requires = [
-    "dogpile.cache>=1.0",
+    "dogpile.cache>=1.4.0",
     "redis",
 ]
 
