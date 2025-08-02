@@ -556,7 +556,7 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTestSuite
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
-            # "lock_class": RedisDistributedLockProxySilent,
+            "lock_class": RedisDistributedLockProxySilent,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }
@@ -613,7 +613,7 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTestSuite)
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
-            # "lock_class": RedisDistributedLockProxyFatal,
+            "lock_class": RedisDistributedLockProxyFatal,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }
