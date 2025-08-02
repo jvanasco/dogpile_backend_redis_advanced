@@ -215,7 +215,7 @@ class RedisAdvancedBackend(RedisBackend):
         else:
             return None
 
-    def get(
+    def get_serialized(
         self,
         key: KeyType,
     ) -> BackendFormatted:
@@ -224,7 +224,7 @@ class RedisAdvancedBackend(RedisBackend):
             return NO_VALUE
         return self.loads(value)
 
-    def get_multi(
+    def get_serialized_multi(
         self,
         keys: Sequence[KeyType],
     ) -> Sequence[BackendFormatted]:
@@ -234,7 +234,7 @@ class RedisAdvancedBackend(RedisBackend):
         loads = self.loads  # potentially faster on large lists
         return [loads(v) if v is not None else NO_VALUE for v in values]
 
-    def set(
+    def set_serialized(
         self,
         key: KeyType,
         value: BackendSetType,
@@ -244,7 +244,7 @@ class RedisAdvancedBackend(RedisBackend):
         else:
             self.writer_client.set(key, self.dumps(value))
 
-    def set_multi(
+    def set_serialized_multi(
         self,
         mapping: Mapping[KeyType, BackendSetType],
     ) -> None:
@@ -328,7 +328,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         else:
             return None
 
-    def get(
+    def get_serialized(
         self,
         key: Union[KeyType, HashKeyType],
     ) -> BackendFormatted:
@@ -342,7 +342,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             return NO_VALUE
         return self.loads(value)
 
-    def get_multi(
+    def get_serialized_multi(
         self, keys: Sequence[Union[KeyType, HashKeyType]]
     ) -> Sequence[BackendFormatted]:
         """
@@ -400,7 +400,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         loads = self.loads  # potentially faster on large lists
         return [loads(v) if v is not None else NO_VALUE for v in values]
 
-    def set(
+    def set_serialized(
         self,
         key: Union[KeyType, HashKeyType],
         value: BackendSetType,
@@ -432,7 +432,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 # redis.py command: `set(name, value)`
                 self.writer_client.set(key, self.dumps(value))
 
-    def set_multi(
+    def set_serialized_multi(
         self,
         mapping: Mapping[Union[KeyType, HashKeyType], BackendSetType],
     ) -> None:
