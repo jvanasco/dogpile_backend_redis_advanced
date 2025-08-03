@@ -1,7 +1,9 @@
+import pickle
 import time
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from unittest import TestCase
 
 # pypi
@@ -38,36 +40,36 @@ def my_loads(value):
     return value
 
 
-class _SerializedAlternate_Test(
+class _SerializedAlternate(
     _TestRedisConn,
     _GenericBackendTestSuite,
 ):
     config_args: ConfigDict = {
-        "arguments": {
+        "arguments": {  # type: ignore[typeddict-unknown-key]
             "host": REDIS_HOST,
             "port": REDIS_PORT,
             "db": 0,
             "foo": "barf",
             "loads": my_loads,
-            "dumps": msgpack.packb,
+            # "dumps": msgpack.packb,
         }
     }
 
 
-class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate_Test):
+class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate):
     backend = "dogpile_backend_redis_advanced"
 
 
-class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate_Test):
+class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate):
     backend = "dogpile_backend_redis_advanced_hstore"
 
 
 # make this simple
-key_string = "some_key"
-key_hash = ("some_key", "h1")
-cloud_value = "some value"
+KEY_STRING = "some_key"
+KEY_HASH = ("some_key", "h1")
+CLOUD_VALUE__BYTES = b"some value"
 
-keys_mixed = [
+_keys_mixed = [
     1,
     2,
     3,
@@ -103,20 +105,31 @@ keys_mixed = [
 ]
 
 
-def keys_multiplier(x):
-    return x * 2
+def _keys_to_value(x: Any) -> str:
+    "this just"
+    return str(x * 2)
 
 
-mixed_generated: List[Any] = []
+KEYS_2_RAW__PAIRS: List[Tuple[str, str]] = []
+KEYS_2_ENCODED__PAIRS: List[Tuple[str, str]] = []
 
-for k in keys_mixed:
+
+for k in _keys_mixed:
+    _value: Any
+    _value_encoded: bytes
     if isinstance(k, tuple):
-        mixed_generated.append((k, keys_multiplier(k[1])))
+        k = tuple(str(i) for i in k)
+        _value = _keys_to_value(k[1])
+        KEYS_2_RAW__PAIRS.append((k, _value))
     else:
-        mixed_generated.append((k, keys_multiplier(k)))
+        k = str(k)
+        _value = _keys_to_value(k)
+    _value_encoded = pickle.dumps(_value)
+    KEYS_2_RAW__PAIRS.append((k, _value))
+    KEYS_2_ENCODED__PAIRS.append((k, _value_encoded))
 
 
-class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
+class RedisAdvancedHstore_HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
     backend = "dogpile_backend_redis_advanced_hstore"
     config_args: ConfigDict = {
         "arguments": {
@@ -137,19 +150,19 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
 
         backend = self._backend()
         # strings
-        backend.set_serialized(key_string, cloud_value)
-        eq_(backend.get_serialized(key_string), cloud_value)
-        backend.delete(key_string)
-        eq_(backend.get_serialized(key_string), NO_VALUE)
+        backend.set_serialized(KEY_STRING, CLOUD_VALUE__BYTES)
+        eq_(backend.get_serialized(KEY_STRING), CLOUD_VALUE__BYTES)
+        backend.delete(KEY_STRING)
+        eq_(backend.get_serialized(KEY_STRING), NO_VALUE)
 
         # make sure we delete above. otherwise the test will fail by trying to
         # use a hmset on a normal key
 
         # hstore
-        backend.set_serialized(key_hash, cloud_value)
-        eq_(backend.get_serialized(key_hash), cloud_value)
-        backend.delete(key_hash)
-        eq_(backend.get_serialized(key_hash), NO_VALUE)
+        backend.set_serialized(KEY_HASH, CLOUD_VALUE__BYTES)
+        eq_(backend.get_serialized(KEY_HASH), CLOUD_VALUE__BYTES)
+        backend.delete(KEY_HASH)
+        eq_(backend.get_serialized(KEY_HASH), NO_VALUE)
 
     def test_mixed_keys(self):
         """
@@ -160,31 +173,35 @@ class HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
         """
         backend = self._backend()
 
-        # set up the mapping
-        mixed_mapping = dict(mixed_generated)
-
+        # set up the mapping of original items
         # upload the mapping
-        backend.set_serialized_multi(mixed_mapping)
+        keys2encoded = dict(KEYS_2_ENCODED__PAIRS)
+        keys_ = list(keys2encoded.keys())
+        backend.set_serialized_multi(keys2encoded)
 
         # grab the results
-        results = backend.get_serialized_multi(keys_mixed)
+        # purposefully not grabbing via string key as in mixed_mapping
+        results = backend.get_serialized_multi(keys_)
 
         # enumerate the results, match their order to the ordered array
         for idx, result in enumerate(results):
-            eq_(result, mixed_generated[idx][1])
+            # the key supplied is: keys_mixed[idx]
+            # this equates to: KEYS_2_RAW__PAIRS[idx][0]
+            result_key = keys_[idx]
+            eq_(result, keys2encoded[result_key])
 
         # delete them all
-        backend.delete_multi(keys_mixed)
+        backend.delete_multi(keys_)
 
         # grab the results
-        results = backend.get_serialized_multi(keys_mixed)
+        results = backend.get_serialized_multi(keys_)
 
         # ensure they're all misses
         for _result in results:
             eq_(_result, NO_VALUE)
 
 
-class HstoreTest_Expires_Hash(HstoreTest):
+class RedisAdvancedHstore_HstoreTest_Expires_Hash(RedisAdvancedHstore_HstoreTest):
     redis_expiration_time_hash: Optional[bool] = None
     config_args: ConfigDict = {
         "arguments": {
@@ -206,19 +223,19 @@ class HstoreTest_Expires_Hash(HstoreTest):
         backend = self._backend()
 
         # hstore
-        backend.set_serialized(key_hash, cloud_value)
-        eq_(backend.get_serialized(key_hash), cloud_value)
+        backend.set_serialized(KEY_HASH, CLOUD_VALUE__BYTES)
+        eq_(backend.get_serialized(KEY_HASH), CLOUD_VALUE__BYTES)
 
         # we don't set ttl on `redis_expiration_time_hash = False`
         if self.redis_expiration_time_hash is not False:
-            ttl = backend.reader_client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(KEY_HASH[0])
             assert ttl >= 1, "ttl should be larger"
 
-            ttl = backend.writer_client.ttl(key_hash[0])
+            ttl = backend.writer_client.ttl(KEY_HASH[0])
             assert ttl >= 1, "ttl should be larger"
 
-        backend.delete(key_hash)
-        eq_(backend.get_serialized(key_hash), NO_VALUE)
+        backend.delete(KEY_HASH)
+        eq_(backend.get_serialized(KEY_HASH), NO_VALUE)
 
     def test_expires_multi(self):
         """
@@ -230,20 +247,22 @@ class HstoreTest_Expires_Hash(HstoreTest):
         backend = self._backend()
 
         # hstore
-        mixed_mapping = dict(mixed_generated)
-        backend.set_serialized_multi(mixed_mapping)
+        keys2encoded = dict(KEYS_2_ENCODED__PAIRS)
+        keys_ = list(keys2encoded.keys())
+        backend.set_serialized_multi(keys2encoded)
 
         # grab the results
-        results = backend.get_serialized_multi(keys_mixed)
+        results = backend.get_serialized_multi(keys_)
 
         # enumerate the results, match their order to the ordered array
         for idx, result in enumerate(results):
-            eq_(result, mixed_generated[idx][1])
+            result_key = keys_[idx]
+            eq_(result, keys2encoded[result_key])
 
         # we don't set ttl on `redis_expiration_time_hash = False`
         if self.redis_expiration_time_hash is not False:
             # make sure every key has an expiry!
-            for k in keys_mixed:
+            for k in keys_:
                 if isinstance(k, tuple):
                     k = k[0]
                 ttl = backend.reader_client.ttl(k)
@@ -253,10 +272,12 @@ class HstoreTest_Expires_Hash(HstoreTest):
                 assert ttl >= 0, "ttl should be larger"
 
         # delete them all
-        backend.delete_multi(keys_mixed)
+        backend.delete_multi(keys_)
 
 
-class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
+class RedisAdvancedHstore_HstoreTest_Expires_Hash_True(
+    RedisAdvancedHstore_HstoreTest_Expires_Hash
+):
     redis_expiration_time_hash = True
     config_args: ConfigDict = {
         "arguments": {
@@ -281,40 +302,41 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
         backend = self._backend()
 
         for i in range(0, 3):
-            backend.set_serialized(key_hash, cloud_value)
-            eq_(backend.get_serialized(key_hash), cloud_value)
+            backend.set_serialized(KEY_HASH, CLOUD_VALUE__BYTES)
+            eq_(backend.get_serialized(KEY_HASH), CLOUD_VALUE__BYTES)
 
-            ttl = backend.reader_client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(KEY_HASH[0])
             assert ttl >= 9, "ttl should be larger"
 
-            ttl = backend.writer_client.ttl(key_hash[0])
+            ttl = backend.writer_client.ttl(KEY_HASH[0])
             assert ttl >= 9, "ttl should be larger"
 
             time.sleep(1)
 
-        backend.delete(key_hash)
-        eq_(backend.get_serialized(key_hash), NO_VALUE)
+        backend.delete(KEY_HASH)
+        eq_(backend.get_serialized(KEY_HASH), NO_VALUE)
 
     def test_expires_tracked_multi(self):
         backend = self._backend()
 
         # set up the mapping
-        mixed_mapping = dict(mixed_generated)
+        keys2encoded = dict(KEYS_2_ENCODED__PAIRS)
+        keys_ = list(keys2encoded.keys())
 
         for i in range(0, 3):
             # upload the mapping
-            backend.set_serialized_multi(mixed_mapping)
+            backend.set_serialized_multi(keys2encoded)
 
             # grab the results
-            results = backend.get_serialized_multi(keys_mixed)
+            results = backend.get_serialized_multi(keys_)
 
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
-                eq_(result, mixed_generated[idx][1])
+                result_key = keys_[idx]
+                eq_(result, keys2encoded[result_key])
 
-                key = keys_mixed[idx]
-                if isinstance(key, tuple):
-                    key = key[0]
+                if isinstance(result_key, tuple):
+                    key = result_key[0]
                     ttl = backend.reader_client.ttl(key)
                     assert ttl >= 9, "ttl should be larger"
 
@@ -323,10 +345,12 @@ class HstoreTest_Expires_HashTrue(HstoreTest_Expires_Hash):
 
             time.sleep(1)
 
-        backend.delete_multi(keys_mixed)
+        backend.delete_multi(keys_)
 
 
-class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
+class RedisAdvancedHstore_HstoreTest_Expires_Hash_None(
+    RedisAdvancedHstore_HstoreTest_Expires_Hash
+):
     redis_expiration_time_hash = None
     config_args: ConfigDict = {
         "arguments": {
@@ -351,43 +375,45 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
         backend = self._backend()
 
         for i in range(0, 5):
-            backend.set_serialized(key_hash, cloud_value)
-            eq_(backend.get_serialized(key_hash), cloud_value)
+            backend.set_serialized(KEY_HASH, CLOUD_VALUE__BYTES)
+            eq_(backend.get_serialized(KEY_HASH), CLOUD_VALUE__BYTES)
             time.sleep(1)
 
-        ttl = backend.reader_client.ttl(key_hash[0])
+        ttl = backend.reader_client.ttl(KEY_HASH[0])
         assert ttl <= 6, "ttl should be <= 6"
         assert ttl >= 4, "ttl should be <= 4"
 
-        ttl = backend.writer_client.ttl(key_hash[0])
+        ttl = backend.writer_client.ttl(KEY_HASH[0])
         assert ttl <= 6, "ttl should be <= 6"
         assert ttl >= 4, "ttl should be <= 4"
 
-        backend.delete(key_hash)
-        eq_(backend.get_serialized(key_hash), NO_VALUE)
+        backend.delete(KEY_HASH)
+        eq_(backend.get_serialized(KEY_HASH), NO_VALUE)
 
     def test_expires_tracked_multi(self):
         backend = self._backend()
 
         # set up the mapping
-        mixed_mapping = dict(mixed_generated)
+        keys2encoded = dict(KEYS_2_ENCODED__PAIRS)
+        keys_ = list(keys2encoded.keys())
 
         # loop over this a bit setting and sleeping
         for i in range(0, 5):
             # upload the mapping
-            backend.set_serialized_multi(mixed_mapping)
+            backend.set_serialized_multi(keys2encoded)
 
             # grab the results
-            results = backend.get_serialized_multi(keys_mixed)
+            results = backend.get_serialized_multi(keys_)
 
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
-                eq_(result, mixed_generated[idx][1])
+                result_key = keys_[idx]
+                eq_(result, keys2encoded[result_key])
 
             time.sleep(1)
 
         # check the ttls.  we should not have set them on the subsequent loops
-        for key in keys_mixed:
+        for key in keys_:
             if isinstance(key, tuple):
                 key = key[0]
                 ttl = backend.reader_client.ttl(key)
@@ -398,10 +424,12 @@ class HstoreTest_Expires_HashNone(HstoreTest_Expires_Hash):
                 assert ttl <= 6, "ttl should be <= 6"
                 assert ttl >= 4, "ttl should be <= 4"
 
-        backend.delete_multi(keys_mixed)
+        backend.delete_multi(keys_)
 
 
-class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
+class RedisAdvancedHstore_HstoreTest_Expires_Hash_False(
+    RedisAdvancedHstore_HstoreTest_Expires_Hash
+):
     redis_expiration_time_hash = False
     config_args: ConfigDict = {
         "arguments": {
@@ -421,38 +449,40 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
         backend = self._backend()
 
         for i in range(0, 3):
-            backend.set_serialized(key_hash, cloud_value)
-            eq_(backend.get_serialized(key_hash), cloud_value)
+            backend.set_serialized(KEY_HASH, CLOUD_VALUE__BYTES)
+            eq_(backend.get_serialized(KEY_HASH), CLOUD_VALUE__BYTES)
 
-            ttl = backend.reader_client.ttl(key_hash[0])
+            ttl = backend.reader_client.ttl(KEY_HASH[0])
             assert ttl == -1, "ttl should be -1"
 
-            ttl = backend.writer_client.ttl(key_hash[0])
+            ttl = backend.writer_client.ttl(KEY_HASH[0])
             assert ttl == -1, "ttl should be -1"
 
-        backend.delete(key_hash)
-        eq_(backend.get_serialized(key_hash), NO_VALUE)
+        backend.delete(KEY_HASH)
+        eq_(backend.get_serialized(KEY_HASH), NO_VALUE)
 
     def test_expires_tracked_multi(self):
         backend = self._backend()
 
         # set up the mapping
-        mixed_mapping = dict(mixed_generated)
+        keys2encoded = dict(KEYS_2_ENCODED__PAIRS)
+        keys_ = list(keys2encoded.keys())
 
         # loop over this a bit setting and sleeping
         for i in range(0, 3):
             # upload the mapping
-            backend.set_serialized_multi(mixed_mapping)
+            backend.set_serialized_multi(keys2encoded)
 
             # grab the results
-            results = backend.get_serialized_multi(keys_mixed)
+            results = backend.get_serialized_multi(keys_)
 
             # enumerate the results, match their order to the ordered array
             for idx, result in enumerate(results):
-                eq_(result, mixed_generated[idx][1])
+                result_key = keys_[idx]
+                eq_(result, keys2encoded[result_key])
 
             # and make sure we did not set the ttl
-            for key in keys_mixed:
+            for key in keys_:
                 if isinstance(key, tuple):
                     key = key[0]
                     ttl = backend.reader_client.ttl(key)
@@ -463,10 +493,12 @@ class HstoreTest_Expires_HashFalse(HstoreTest_Expires_Hash):
 
             time.sleep(1)
 
-        backend.delete_multi(keys_mixed)
+        backend.delete_multi(keys_)
 
 
-class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTestSuite):
+class RedisAdvancedHstore_DistributedMutex_CustomPrefixTest(
+    _TestRedisConn, _GenericMutexTestSuite
+):
     backend = "dogpile_backend_redis_advanced_hstore"
     config_args: ConfigDict = {
         "arguments": {
@@ -501,22 +533,31 @@ class RedisDistributedMutexCustomPrefixTest(_TestRedisConn, _GenericMutexTestSui
         reg.delete(key)
 
 
-class RedisDistributedLockProxy(object):
+class _RedisDistributedLockProxy:
     """base lock wrapper for testing"""
 
     mutex: Any
+    _locked: bool = False
 
     def __init__(self, mutex: Any):
+        self._locked = False
         self.mutex = mutex
 
     def acquire(self, *_args, **_kwargs):
+        if self._locked:
+            return False
+        self._locked = True
         return self.mutex.acquire(*_args, **_kwargs)
 
     def release(self):
-        raise NotImplementedError()
+        self._locked = False
+        self.mutex.release()
+
+    def locked(self):
+        return self._locked
 
 
-class RedisDistributedLockProxySilent(RedisDistributedLockProxy):
+class RedisDistributedLockProxy_Silent(_RedisDistributedLockProxy):
     """example lock wrapper
     this will silently pass if a LockError is encountered
     """
@@ -530,9 +571,11 @@ class RedisDistributedLockProxySilent(RedisDistributedLockProxy):
             pass
         except Exception as e:
             raise
+        finally:
+            self._locked = False
 
 
-class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
+class RedisDistributedLockProxy_Fatal(_RedisDistributedLockProxy):
     """example lock wrapper
     this will re-raise LockErrors but give a hook to log or retry
     """
@@ -545,9 +588,13 @@ class RedisDistributedLockProxyFatal(RedisDistributedLockProxy):
             raise
         except Exception as e:
             raise
+        finally:
+            self._locked = False
 
 
-class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTestSuite):
+class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
+    _TestRedisConn, _GenericMutexTestSuite
+):
     backend = "dogpile_backend_redis_advanced_hstore"
     config_args: ConfigDict = {
         "arguments": {
@@ -556,7 +603,7 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTestSuite
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
-            "lock_class": RedisDistributedLockProxySilent,
+            "lock_class": RedisDistributedLockProxy_Silent,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }
@@ -604,7 +651,9 @@ class RedisDistributedMutexSilentLockTest(_TestRedisConn, _GenericMutexTestSuite
             reg.delete(_k)
 
 
-class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTestSuite):
+class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
+    _TestRedisConn, _GenericMutexTestSuite
+):
     backend = "dogpile_backend_redis_advanced_hstore"
     config_args: ConfigDict = {
         "arguments": {
@@ -613,7 +662,7 @@ class RedisDistributedMutexFatalLockTest(_TestRedisConn, _GenericMutexTestSuite)
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
-            "lock_class": RedisDistributedLockProxyFatal,
+            "lock_class": RedisDistributedLockProxy_Fatal,
             "lock_timeout": 1,
             "redis_expiration_time": 1,
         }

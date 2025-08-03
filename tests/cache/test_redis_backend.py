@@ -2,6 +2,8 @@ from concurrent.futures import ThreadPoolExecutor
 import os
 from threading import Event
 import time
+from typing import Any
+from typing import Optional
 
 # pypi
 from dogpile.cache.region import _backend_loader
@@ -66,6 +68,10 @@ class ArugumentsDict(TypedDict):
     thread_local_lock: NotRequired[bool]
     lock_timeout: NotRequired[int]
     redis_expiration_time: NotRequired[int]
+    blocking_timeout: NotRequired[int]
+    lock_class: NotRequired[Any]
+    lock_prefix: NotRequired[str]
+    redis_expiration_time_hash: NotRequired[Optional[bool]]
 
 
 class ConfigDict(TypedDict):
@@ -80,10 +86,11 @@ class _TestRedisConn:
             backend.set_serialized("x", b"y")
             assert backend.get_serialized("x") == b"y"
             backend.delete("x")
-        except Exception:
+        except Exception as exc:
             if not expect_redis_running:
                 pytest.skip(
-                    "redis is not running or " "otherwise not functioning correctly"
+                    str(exc.args[0]) + "redis is not running or "
+                    "otherwise not functioning correctly"
                 )
             else:
                 raise
@@ -96,7 +103,7 @@ class RedisAdvanced__RedisTest(_TestRedisConn, _GenericBackendTestSuite):
     # implements: dogpile_cache/tests/cache/test_redis_backend.py::RedisTest
     backend = "dogpile_backend_redis_advanced"
     config_args: ConfigDict = {
-        "arguments": {
+        "arguments": {  # type: ignore[typeddict-unknown-key]
             "host": REDIS_HOST,
             "port": REDIS_PORT,
             "db": 0,
@@ -158,6 +165,7 @@ class RedisAdvanced__RedisAsyncCreationTest(_TestRedisConn, _GenericBackendFixtu
             "distributed_lock": True,
             # This is the important bit:
             "thread_local_lock": False,
+            "blocking_timeout": 3,
         }
     }
 
@@ -168,7 +176,14 @@ class RedisAdvanced__RedisAsyncCreationTest(_TestRedisConn, _GenericBackendFixtu
         # A simple example of how people may implement an async runner -
         # plugged into a thread pool executor.
         def asyncer(cache, key, creator, mutex):
+            print("asyncer")
+            print("cache", cache)
+            print("key", key)
+            print("creator", creator)
+            print("mutex", mutex)
+
             def _call():
+                print(4)
                 try:
                     value = creator()
                     cache.set(key, value)
@@ -185,15 +200,20 @@ class RedisAdvanced__RedisAsyncCreationTest(_TestRedisConn, _GenericBackendFixtu
 
             return pool.submit(_call)
 
+        print(1)
         reg = self._region(
             region_args={"async_creation_runner": asyncer},
             config_args={"expiration_time": 0.1},
         )
 
+        print(2)
+
         @reg.cache_on_arguments()
         def blah(k):
+            print(21)
             return k * 2
 
+        print(3)
         # First call adds to the cache without calling the async creator.
         eq_(blah("asd"), "asdasd")
 
@@ -223,9 +243,11 @@ class RedisAdvancedHstore__RedisAsyncCreationTest(
 class RedisAdvanced__RedisConnectionTest:
     # reimplements `RedisConnectionTest`
     backend = "dogpile_backend_redis_advanced"
+    backend_cls: Any
 
     @classmethod
     def setup_class(cls):
+        print("RedisAdvanced__RedisConnectionTest", cls)
         cls.backend_cls = _backend_loader.load(cls.backend)
         try:
             cls.backend_cls({})
