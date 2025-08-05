@@ -26,6 +26,10 @@ from dogpile.cache.api import SerializedReturnType
 from dogpile.cache.backends.redis import _RedisLockWrapper
 from dogpile.cache.backends.redis import RedisBackend
 
+# local
+from ..serializers import f_pickle_dumps
+from ..serializers import f_pickle_loads
+
 if TYPE_CHECKING:
     import redis
 
@@ -94,10 +98,14 @@ class RedisAdvancedBackend(RedisBackend):
     # set in RedisBackend.__init__
     lock_class: _RedisLockWrapper
     lock_prefix: str = "_lock"
+    debug_cache_size: bool
 
     # set in RedisAdvancedBackend.__init__
     writer_client: "redis.StrictRedis"
     reader_client: "redis.StrictRedis"
+
+    serializer = lambda self, x: f_pickle_dumps(x)  # noqa: E731
+    deserializer = f_pickle_loads
 
     def __init__(
         self,
@@ -117,8 +125,26 @@ class RedisAdvancedBackend(RedisBackend):
                 thread_local=self.thread_local_lock,
             )
             return self.lock_class(_mutex)
-        else:
-            return None
+        return None
+
+
+class RedisAlreadySerializedBackend(RedisAdvancedBackend):
+    """unsets the (de)serializers; pipes get/set to serialized methods"""
+
+    serializer = None
+    deserializer = None
+
+    def get(self, key):
+        return RedisBackend.get_serialized(self, key)
+
+    def get_multi(self, keys):
+        return RedisBackend.get_serialized_multi(self, keys)
+
+    def set(self, key, value):
+        return RedisBackend.set_serialized(self, key, value)
+
+    def set_multi(self, mapping):
+        return RedisBackend.set_serialized_multi(self, mapping)
 
 
 class RedisAdvancedHstoreBackend(RedisAdvancedBackend):

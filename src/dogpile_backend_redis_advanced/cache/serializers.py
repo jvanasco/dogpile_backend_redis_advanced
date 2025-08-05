@@ -1,6 +1,20 @@
+# stdlib
 import pickle
+import time
 from typing import Any
 from typing import Callable
+from typing import Mapping
+from typing import Sequence
+from typing import Union
+
+# pypi
+from dogpile.cache.api import CachedValue
+from dogpile.cache.api import KeyType
+from dogpile.cache.api import NO_VALUE  # singleton
+from dogpile.cache.api import NoValue  # class
+from dogpile.cache.proxy import ProxyBackend
+from dogpile.cache.region import value_version
+
 
 # ==============================================================================
 
@@ -33,45 +47,151 @@ def default_dumps_factory() -> Callable:
     return default_dumps
 
 
-default_dumps = default_dumps_factory()
-default_loads: Callable = pickle.loads
+# shortcuts
+f_time = time.time
+f_pickle_loads = pickle.loads
+# f_pickle_dumps = pickle.dumps
+f_pickle_dumps = default_dumps_factory()
 
 
-"""
+class _CustomSerializerProxyBackend(ProxyBackend):
+    """
+    In order to use a Custom Serializer like this, we do three things:
 
-    If you would like to use another serializer, such as msgpack, it may be
-    best to use a function or lambda function for finer control:
+    1- Include this as a wraps on a Region
+    2- Configure the Region to use "dogpile_backend_redis_already_serialized"
+    3- Disable the Region's serializer/deserializer
 
-        def my_loads(value):
-            ''''
-            we need to unpack the value and stash it into a CachedValue
-            we support strings in this version, because it's used in unit tests
-            that require the ability to set/read raw data
-            '''
-            value = msgpack.unpackb(value, use_list=False)
-            if isinstance(value, tuple):
-                return CachedValue(*value)
-            return value
+    Together, that looks like this:
 
-        {
-         'loads': my_loads,
-         'dumps': msgpack.packb,
-         }
+        region = make_region(name="AlreadySerializedRegion")
+        region.configure_from_config(
+            {"host": REDIS_HOST,
+             "port": REDIS_PORT,
+             "expiration_time": 3600,
+             "wrap": [CustomSerializerProxyBackend],
+             "backend": "dogpile_backend_redis_already_serialized",
+             },
+            prefix="",
+        )
+        region.serializer = None
+        region.deserializer = None
 
+    What does this backend do?
 
-    Example configuration::
+    In the default usage:
+        1- The time is truncated from the metadata payload
+        2- cache size data can be logged.  Instead of passing in a wrap class
+           to the region constructor, pass an instance with
+           `DEBUG_CACHE_SIZE = True`::
 
-        from dogpile.cache import make_region
+                wrap = Serializer_Raw_ProxyBackend()
+                wrap.DEBUG_CACHE_SIZE = True
 
-        region = make_region().configure(
-            'dogpile_backend_redis_advanced.redis_advanced',
-            arguments = {
-                'host': 'localhost',
-                'port': 6379,
-                'db': 0,
-                'redis_expiration_time': 60*60*2,   # 2 hours
-                'distributed_lock': True
-                }
+    """
+
+    DEBUG_CACHE_SIZE: bool = False
+
+    def get_serialized_multi(
+        self,
+        key: KeyType,
+    ) -> Union[CachedValue, NoValue]:
+        raise NotImplementedError(
+            "Custom serializers not supported | " "get_serialized_multi"
         )
 
-"""
+    def set_serialized_multi(self, key: KeyType, value: Any) -> None:
+        raise NotImplementedError(
+            "Custom serializers not supported | " "set_serialized_multi"
+        )
+
+    def get_serialized(self, key: KeyType) -> Union[CachedValue, NoValue]:
+        raise NotImplementedError(
+            "Custom serializers not supported | " "get_serialized"
+        )
+
+    def set_serialized(self, key: KeyType, value: Any) -> None:
+        raise NotImplementedError(
+            "Custom serializers not supported | " "set_serialized"
+        )
+
+    def get(self, key: KeyType) -> Union[CachedValue, NoValue]:
+        serialized = self.proxied.get(key)
+        if serialized is NO_VALUE:
+            return NO_VALUE
+        value = self._deserialize(serialized)
+        if self.DEBUG_CACHE_SIZE:
+            value[1]["sz"] = len(str(serialized))
+        return CachedValue(value[0], value[1])
+
+    def get_multi(
+        self,
+        keys: Sequence[KeyType],
+    ) -> Union[CachedValue, NoValue]:
+        backend_values = self.proxied.get_multi(keys)
+        for idx, serialized in enumerate(backend_values):
+            if serialized is not NO_VALUE:
+                value = self._deserialize(serialized)
+                if self.DEBUG_CACHE_SIZE:
+                    value[1]["sz"] = len(str(serialized))
+                backend_values[idx] = CachedValue(value[0], value[1])
+        return backend_values
+
+    def set(self, key: KeyType, value: CachedValue) -> None:
+        """make the timeout an int"""
+        value.metadata["ct"] = int(value.metadata["ct"])
+        serialized = self._serialize(value)
+        self.proxied.set(key, serialized)
+
+    def set_multi(
+        self,
+        mapping: Mapping[KeyType, Union[CachedValue, NoValue]],
+    ) -> None:
+        for k in list(mapping.keys()):
+            value = mapping[k]
+            value.metadata["ct"] = int(value.metadata["ct"])
+            serialized = self._serialize(value)
+            mapping[k] = serialized
+        self.proxied.set_multi(mapping)
+
+
+class Serializer_PickleInt_ProxyBackend(_CustomSerializerProxyBackend):
+    """
+    see docs for `_CustomSerializerProxyBackend`
+    """
+
+    _deserialize = f_pickle_loads
+
+    def _serialize(self, serialized: bytes):
+        return f_pickle_dumps(serialized)
+
+
+class Serializer_Raw_ProxyBackend(_CustomSerializerProxyBackend):
+    """
+    see docs for `_CustomSerializerProxyBackend`
+    """
+
+    def _deserialize(
+        self,
+        serialized: bytes,
+        *args,
+    ) -> Union[str, int, NoValue, None]:
+        value = serialized.decode()
+        if value == "@NO_VALUE":
+            value = NO_VALUE
+        elif value == "@None":
+            value = None
+        elif value.isdigit():
+            if value[0] != "0":
+                value = int(value)
+        return value, {"ct": f_time(), "v": value_version}
+
+    def _serialize(self, value: CachedValue) -> bytes:
+        serialized = value.payload
+        if serialized is NO_VALUE:
+            serialized = "@NO_VALUE"
+        elif serialized is None:
+            serialized = "@None"
+        else:
+            serialized = serialized.encode()
+        return serialized

@@ -9,6 +9,11 @@ register_backend(
     "RedisAdvancedBackend",
 )
 register_backend(
+    "dogpile_backend_redis_already_serialized",
+    "dogpile_backend_redis_advanced.cache.backends.redis_advanced",
+    "RedisAlreadySerializedBackend",
+)
+register_backend(
     "dogpile_backend_redis_advanced_hstore",
     "dogpile_backend_redis_advanced.cache.backends.redis_advanced",
     "RedisAdvancedHstoreBackend",
