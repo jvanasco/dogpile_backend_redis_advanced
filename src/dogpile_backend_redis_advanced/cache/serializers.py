@@ -61,11 +61,13 @@ def faked_meta() -> Dict:
 
 class _CustomSerializerProxyBackend(ProxyBackend):
     """
-    In order to use a Custom Serializer like this, we do three things:
+    In order to use a Custom Serializer like this, we do two things:
 
     1- Include this as a wraps on a Region
-    2- Configure the Region to use "dogpile_backend_redis_already_serialized"
-    3- Disable the Region's serializer/deserializer
+    2- Configure the Region to use "dogpile_backend_redis_already_serialized",
+       which does the following:
+        unsets the Region's serializer/deserializer
+        proxies the get/set commands to serialized versions
 
     Together, that looks like this:
 
@@ -79,8 +81,6 @@ class _CustomSerializerProxyBackend(ProxyBackend):
              },
             prefix="",
         )
-        region.serializer = None
-        region.deserializer = None
 
     What does this backend do?
 
