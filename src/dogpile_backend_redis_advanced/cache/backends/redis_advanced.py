@@ -5,67 +5,46 @@ Redis Backends
 Provides backends for talking to `Redis <http://redis.io>`_.
 
 """
-from __future__ import absolute_import
 
 # stdlib
 from collections import defaultdict
-import pickle
-from typing import Any
-from typing import Callable
 from typing import Dict
 from typing import List
+from typing import Mapping
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import TYPE_CHECKING
+from typing import Union
 
 # pypi
-from dogpile.cache.api import NO_VALUE
+from dogpile.cache.api import BackendArguments
+from dogpile.cache.api import KeyType
+from dogpile.cache.api import NoValue
+from dogpile.cache.api import SerializedReturnType
+from dogpile.cache.backends.redis import _RedisLockWrapper
 from dogpile.cache.backends.redis import RedisBackend
 
-# only needed for testing
-# import redis
+# local
+from ..serializers import f_pickle_dumps
+from ..serializers import f_pickle_loads
 
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-
-__all__ = ("RedisAdvancedBackend", "RedisAdvancedHstoreBackend")
-
+if TYPE_CHECKING:
+    import redis
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-default_loads: Callable = pickle.loads
+__all__ = (
+    "RedisAdvancedBackend",
+    "RedisAdvancedHstoreBackend",
+    "HashKeyType",
+)
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-def default_dumps_factory() -> Callable:
-    """
-    optimized for the cpython compiler. shaves a tiny bit off.
-    this turns 'pickle_dumps' into a local variable to the dump function.
-    original:
-              0 LOAD_GLOBAL              0 (pickle)
-              3 LOAD_ATTR                1 (dumps)
-              6 LOAD_GLOBAL              2 (v)
-              9 LOAD_GLOBAL              0 (pickle)
-             12 LOAD_ATTR                3 (HIGHEST_PROTOCOL)
-             15 CALL_FUNCTION            2
-             18 RETURN_VALUE
-    optimized:
-              0 LOAD_DEREF               0 (_dumps)
-              3 LOAD_FAST                0 (v)
-              6 LOAD_DEREF               1 (_protocol)
-              9 CALL_FUNCTION            2
-             12 RETURN_VALUE
-    """
-    _dumps = pickle.dumps
-    _protocol = pickle.HIGHEST_PROTOCOL
-
-    def default_dumps(v):
-        return _dumps(v, _protocol)
-
-    return default_dumps
-
-
-default_dumps = default_dumps_factory()
+HashKeyType = Tuple[str, str]
+"""A hash cache key."""
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -76,56 +55,6 @@ class RedisAdvancedBackend(RedisBackend):
     `redis-py <http://pypi.python.org/pypi/redis/>`_ backend.
 
     This extends the `dogpile.cache` default redis backend
-
-    :param loads: callable that will be passed a serialized value. by
-     default, this is ``pickle.loads``.
-
-    :param dumps: callable that will be passed a serialized value. by
-     default, this is ``pickle.dumps(value, pickle.HIGHEST_PROTOCOL)``.
-
-    If you would like to use another serializer, such as msgpack, it may be
-    best to use a function or lambda function for finer control:
-
-        def my_loads(value):
-            ''''
-            we need to unpack the value and stash it into a CachedValue
-            we support strings in this version, because it's used in unit tests
-            that require the ability to set/read raw data
-            '''
-            value = msgpack.unpackb(value, use_list=False)
-            if isinstance(value, tuple):
-                return CachedValue(*value)
-            return value
-
-        {
-         'loads': my_loads,
-         'dumps': msgpack.packb,
-         }
-
-
-    Example configuration::
-
-        from dogpile.cache import make_region
-
-        region = make_region().configure(
-            'dogpile_backend_redis_advanced.redis_advanced',
-            arguments = {
-                'host': 'localhost',
-                'port': 6379,
-                'db': 0,
-                'redis_expiration_time': 60*60*2,   # 2 hours
-                'distributed_lock': True
-                }
-        )
-
-
-    :param loads: function that implements an interface like `pickle.loads`.
-     Defaults to ``pickle.loads``
-     .. versionadded:: 0.0.1
-
-    :param dumps: function that implements an interface like `pickle.dumps`
-     Defaults to ``lambda v: pickle.dumps(v, picke.HIGHEST_PROTOCOL)``
-     .. versionadded:: 0.0.1
 
     :param lock_class: class, class to wrap a lock mutex in.  A variety of
      factors can cause the distributed lock to disappear or become invalidated
@@ -165,53 +94,56 @@ class RedisAdvancedBackend(RedisBackend):
 
     """
 
-    def __init__(self, arguments: Dict):
-        arguments = arguments.copy()
-        super(RedisAdvancedBackend, self).__init__(arguments)
-        self.loads = arguments.pop("loads", default_loads)
-        self.dumps = arguments.pop("dumps", default_dumps)
-        self.lock_class = arguments.pop("lock_class", None)
-        self.lock_prefix = "%s{0}" % arguments.pop("lock_prefix", "_lock")
+    # set in RedisBackend.__init__
+    lock_class: _RedisLockWrapper
+    lock_prefix: str = "_lock"
+    debug_cache_size: bool
 
-    def get_mutex(self, key: str) -> Optional[Any]:
+    # set in RedisAdvancedBackend.__init__
+    writer_client: "redis.StrictRedis"
+    reader_client: "redis.StrictRedis"
+
+    serializer = lambda self, x: f_pickle_dumps(x)  # noqa: E731
+    deserializer = f_pickle_loads
+
+    def __init__(
+        self,
+        arguments: BackendArguments,
+    ):
+        _arguments = dict(arguments.items())
+        super(RedisAdvancedBackend, self).__init__(_arguments)
+        self.lock_class = _arguments.pop("lock_class", _RedisLockWrapper)
+        self.lock_prefix = "%s{0}" % _arguments.pop("lock_prefix", "_lock")
+
+    def get_mutex(self, key: KeyType) -> Optional[_RedisLockWrapper]:
         if self.distributed_lock:
-            _key = self.lock_prefix.format(key)
-            _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
-            if self.lock_class:
-                return self.lock_class(_mutex)
-            return _mutex
-        else:
-            return None
+            _mutex = self.writer_client.lock(
+                self.lock_prefix.format(key),
+                timeout=self.lock_timeout,
+                sleep=self.lock_sleep,
+                thread_local=self.thread_local_lock,
+            )
+            return self.lock_class(_mutex)
+        return None
 
-    def get(self, key: str) -> Any:
-        value = self.client.get(key)
-        if value is None:
-            return NO_VALUE
-        return self.loads(value)
 
-    def get_multi(self, keys: Tuple[str]) -> List[Any]:
-        if not keys:
-            return []
-        values = self.client.mget(keys)
-        loads = self.loads  # potentially faster on large lists
-        return [loads(v) if v is not None else NO_VALUE for v in values]
+class RedisAlreadySerializedBackend(RedisAdvancedBackend):
+    """unsets the (de)serializers; pipes get/set to serialized methods"""
 
-    def set(self, key: str, value: Any) -> None:
-        if self.redis_expiration_time:
-            self.client.setex(key, self.redis_expiration_time, self.dumps(value))
-        else:
-            self.client.set(key, self.dumps(value))
+    serializer = None
+    deserializer = None
 
-    def set_multi(self, mapping: Dict) -> None:
-        dumps = self.dumps  # potentially faster on large lists
-        mapping = dict((k, dumps(v)) for k, v in mapping.items())
-        if not self.redis_expiration_time:
-            self.client.mset(mapping)
-        else:
-            pipe = self.client.pipeline()
-            for key, value in mapping.items():
-                pipe.setex(key, self.redis_expiration_time, value)
-            pipe.execute()
+    def get(self, key: KeyType) -> SerializedReturnType:
+        return RedisBackend.get_serialized(self, key)
+
+    def get_multi(self, keys: Sequence[KeyType]) -> Sequence[SerializedReturnType]:
+        return RedisBackend.get_serialized_multi(self, keys)
+
+    def set(self, key: KeyType, value: bytes) -> None:
+        return RedisBackend.set_serialized(self, key, value)
+
+    def set_multi(self, mapping: Mapping[KeyType, bytes]) -> None:
+        return RedisBackend.set_serialized_multi(self, mapping)
 
 
 class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
@@ -259,39 +191,43 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
     """
 
-    def __init__(self, arguments: Dict):
-        arguments = arguments.copy()
-        super(RedisAdvancedHstoreBackend, self).__init__(arguments)
-        self.redis_expiration_time_hash = arguments.pop(
+    def __init__(self, arguments: BackendArguments):
+        _arguments = dict(arguments.items())
+        super(RedisAdvancedHstoreBackend, self).__init__(_arguments)
+        self.redis_expiration_time_hash = _arguments.pop(
             "redis_expiration_time_hash", None
-        )  # noqa
+        )
 
-    def get_mutex(self, key: str) -> Optional[Any]:
+    def get_mutex(
+        self,
+        key: Union[KeyType, HashKeyType],
+    ) -> Optional[_RedisLockWrapper]:
+        keystr: str
         if isinstance(key, tuple):
             # key can be a tuple
-            key = ",".join(key)
-        if self.distributed_lock:
-            # redis.py command: `lock(name, timeout=None, sleep=0.1)`
-            _key = self.lock_prefix.format(key)
-            _mutex = self.client.lock(_key, self.lock_timeout, self.lock_sleep)
-            if self.lock_class:
-                return self.lock_class(_mutex)
-            return _mutex
+            keystr = ",".join([str(i) for i in key])
         else:
-            return None
+            keystr = key
+        return RedisAdvancedBackend.get_mutex(self, keystr)
 
-    def get(self, key: str) -> Any:
+    def get_serialized(
+        self,
+        key: Union[KeyType, HashKeyType],
+    ) -> SerializedReturnType:
         if isinstance(key, tuple):
             # redis.py command: `hget(hashname, key)`
-            value = self.client.hget(key[0], key[1])
+            value = self.reader_client.hget(key[0], key[1])
         else:
             # redis.py command: `get(name)`
-            value = self.client.get(key)
+            value = self.reader_client.get(key)
         if value is None:
-            return NO_VALUE
-        return self.loads(value)
+            return NoValue.NO_VALUE
+        return value
 
-    def get_multi(self, keys: Tuple[str]) -> List[Any]:
+    def get_serialized_multi(
+        self,
+        keys: Sequence[Union[KeyType, HashKeyType]],
+    ) -> Sequence[SerializedReturnType]:
         """
         * figure out which are string keys vs hashes, process 2 queues
         * for hashes, bucket into multiple requests
@@ -300,9 +236,9 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         position in a dict.
         """
         # scoping
-        _keys_str: List[str] = []
-        _keys_str_idx: List[int] = []
-        _keys_hash: List[str] = []
+        _keys_std: List[KeyType] = []
+        _keys_std_idx: List[int] = []
+        _keys_hash: List[HashKeyType] = []
         _keys_hash_idx: List[int] = []
 
         # initialize this list
@@ -313,17 +249,18 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _keys_hash.append(_k)
                 _keys_hash_idx.append(_idx)
             else:
-                _keys_str.append(_k)
-                _keys_str_idx.append(_idx)
+                _keys_std.append(_k)
+                _keys_std_idx.append(_idx)
 
         # batch the keys at once
-        if _keys_str:
+        if _keys_std:
             # redis.py command: `mget(keys, *args)`
-            _values = self.client.mget(_keys_str)
+            _values = self.reader_client.mget(_keys_std)
             # build this back into the results in the right order
-            _values = zip(_keys_str_idx, _values)
-            for _idx, _v in _values:
-                values[_idx] = _v
+            if _values:
+                _values = zip(_keys_std_idx, _values)
+                for _idx, _v in _values:
+                    values[_idx] = _v
 
         # group and batch the hashed as needed
         if _keys_hash:
@@ -338,16 +275,20 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _hashed[k[0]]["idx"].append(_keys_hash_idx[idx])
             for name in _hashed:
                 # redis.py command: `hmget(name, keys, *args)`
-                _values = self.client.hmget(name, _hashed[name]["keys"])
+                _values = self.reader_client.hmget(name, _hashed[name]["keys"])
                 # build this back into the results in the right order
-                _values = zip(_hashed[name]["idx"], _values)
-                for _idx, _v in _values:
-                    values[_idx] = _v
+                if _values:
+                    _values = zip(_hashed[name]["idx"], _values)
+                    for _idx, _v in _values:
+                        values[_idx] = _v
 
-        loads = self.loads  # potentially faster on large lists
-        return [loads(v) if v is not None else NO_VALUE for v in values]
+        return [v if v is not None else NoValue.NO_VALUE for v in values]
 
-    def set(self, key: str, value: Any) -> None:
+    def set_serialized(
+        self,
+        key: Union[KeyType, HashKeyType],
+        value: bytes,
+    ) -> None:
         if isinstance(key, tuple):
             _set_expiry = None
             if self.redis_expiration_time_hash is True:
@@ -356,43 +297,46 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             elif self.redis_expiration_time_hash is None:
                 # conditionally set
                 # redis.py command: `exists(key)`
-                _hash_exists = self.client.exists(key[0])
+                _hash_exists = self.writer_client.exists(key[0])
                 if not _hash_exists:
                     _set_expiry = True
 
             # redis.py command: `hset(name, key, value)`
-            self.client.hset(key[0], key[1], self.dumps(value))
+            self.writer_client.hset(key[0], key[1], value)
             if _set_expiry:
                 # redis.py command: `expire(name, time)`
-                self.client.expire(key[0], self.redis_expiration_time)
+                self.writer_client.expire(key[0], self.redis_expiration_time)
         else:
             if self.redis_expiration_time:
                 # redis.py command: `setex(name, time, value)`
-                self.client.setex(key, self.redis_expiration_time, self.dumps(value))
+                self.writer_client.setex(key, self.redis_expiration_time, value)
             else:
                 # redis.py command: `set(name, value)`
-                self.client.set(key, self.dumps(value))
+                self.writer_client.set(key, value)
 
-    def set_multi(self, mapping: Dict) -> None:
+    def set_serialized_multi(
+        self,
+        mapping: Mapping[  # type: ignore[override]
+            Union[KeyType, HashKeyType],
+            bytes,
+        ],
+    ) -> None:
         """
         we'll always use a pipeline for this class
         """
-        # encode
-        dumps = self.dumps  # potentially faster on large lists
-        mapping = dict((k, dumps(v)) for k, v in mapping.items())
 
         # derive key types
-        _keys_str = []
+        _keys_std = []
         _keys_hash = []
         _hash_bucketed: Optional[Dict] = None
         for _k in mapping.keys():
             if isinstance(_k, tuple):
                 _keys_hash.append(_k)
             else:
-                _keys_str.append(_k)
+                _keys_std.append(_k)
 
         # redis.py command: `pipeline(transaction=True, shard_hint=None)`
-        pipe = self.client.pipeline()
+        pipe = self.writer_client.pipeline()
 
         # whether or not we have a redis_expiration_time, we set via hmset
         if _keys_hash:
@@ -407,7 +351,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 elif self.redis_expiration_time_hash is None:
                     # conditionally set
                     # redis.py command: `exists(key)`
-                    _hash_exists = self.client.exists(name)
+                    _hash_exists = self.writer_client.exists(name)
                     if not _hash_exists:
                         _set_expiry = True
 
@@ -420,14 +364,14 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
         if not self.redis_expiration_time:
             # redis.py command: `mset(mapping)`
-            if _keys_str:
-                _mapping_str = {k: mapping[k] for k in _keys_str}
+            if _keys_std:
+                _mapping_str = {k: mapping[k] for k in _keys_std}
                 # redis.py command: `mset(mapping)`
                 pipe.mset(_mapping_str)
             # bucketed hash was set above
         else:
-            if _keys_str:
-                for key in _keys_str:
+            if _keys_std:
+                for key in _keys_std:
                     # redis.py command: `setex(name, time, value)`
                     pipe.setex(key, self.redis_expiration_time, mapping[key])
             # bucketed hash was set above
@@ -435,15 +379,21 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         # run the pipeline
         pipe.execute()
 
-    def delete(self, key: str) -> None:
+    def delete(
+        self,
+        key: Union[KeyType, HashKeyType],
+    ) -> None:
         if isinstance(key, tuple):
             # redis.py command: hdel(`name, *keys)`
-            self.client.hdel(key[0], key[1])
+            self.writer_client.hdel(key[0], key[1])
         else:
             # redis.py command: delete(*names)`
-            self.client.delete(key)
+            self.writer_client.delete(key)
 
-    def delete_multi(self, keys: Tuple[str]) -> None:
+    def delete_multi(
+        self,
+        keys: Sequence[Union[KeyType, HashKeyType]],
+    ) -> None:
         """
         In order to handle multiple deletes, we need to inspect the keys and
         batch them into the appropriate method.  This has a negligible cost.
@@ -457,11 +407,11 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _keys.append(k)
         if _keys:
             # redis.py command: delete(*names)`
-            self.client.delete(*_keys)
+            self.writer_client.delete(*_keys)
         if _keys_hash:
             _hashed: Dict[str, List] = {k[0]: [] for k in _keys_hash}
             for k in _keys_hash:
                 _hashed[k[0]].append(k[1])
             for name in _hashed:
                 # redis.py command: `hdel(name, *keys)`
-                self.client.hdel(name, *_hashed[name])
+                self.writer_client.hdel(name, *_hashed[name])

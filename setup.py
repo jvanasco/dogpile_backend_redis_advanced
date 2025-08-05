@@ -2,7 +2,8 @@ import os
 import re
 import sys
 
-from setuptools import setup, find_packages
+from setuptools import find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
 
 
@@ -38,7 +39,7 @@ with open(os.path.join(HERE, "README.md")) as fp:
 
 
 install_requires = [
-    "dogpile.cache>=1.0",
+    "dogpile.cache>=1.4.0",
     "redis",
 ]
 
@@ -47,6 +48,7 @@ tests_require = install_requires + [
     "pytest-cov",
     "mock",
     "msgpack-python",
+    "types-mock",
 ]
 testing_extras = [
     "flake8",
@@ -67,12 +69,6 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
     ],
     keywords="caching dogpile",
     author="Jonathan Vanasco",

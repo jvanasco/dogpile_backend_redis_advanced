@@ -1,0 +1,108 @@
+from unittest import TestCase
+
+# pypi
+from dogpile.cache import make_region
+from dogpile.cache.proxy import ProxyBackend
+from dogpile.cache.region import CacheRegion
+
+# local
+import dogpile_backend_redis_advanced  # noqa: F401
+from dogpile_backend_redis_advanced.cache.serializers import f_pickle_loads
+from dogpile_backend_redis_advanced.cache.serializers import (
+    Serializer_PickleIntTime_ProxyBackend,
+)
+from dogpile_backend_redis_advanced.cache.serializers import (
+    Serializer_PickleNoMeta_ProxyBackend,
+)
+from dogpile_backend_redis_advanced.cache.serializers import Serializer_Raw_ProxyBackend
+from .test_redis_backend import REDIS_HOST
+from .test_redis_backend import REDIS_PORT
+
+
+# ==============================================================================
+
+
+class _RedisAlreadySerialized:
+    region: CacheRegion
+    wrap: ProxyBackend
+    _debug_cache_size: bool = False
+
+    def setUp(self):
+        self.region = make_region(name=self.__class__.__name__)
+        self.region.configure_from_config(
+            {
+                "host": REDIS_HOST,
+                "port": REDIS_PORT,
+                "expiration_time": 3600,
+                "wrap": [self.wrap],
+                "backend": "dogpile_backend_redis_already_serialized",
+            },
+            prefix="",
+        )
+        self.region.serializer = None
+        self.region.deserializer = None
+
+    def test_set(self):
+        value_str = "example value"
+        self.region.set("example", value_str)
+        cached = self.region.get("example")
+        assert value_str == cached
+
+    def test_cached(self):
+        value_str = "example value"
+        self.region.set("example", value_str)
+
+        # the assembled should look right
+        # and have a size if configured
+        cached_assembled = self.region.get_value_metadata("example")
+        if not self._debug_cache_size:
+            assert "sz" not in cached_assembled[1]
+        else:
+            assert "sz" in cached_assembled[1]
+
+        # the raw value might look identical
+        cached_raw = self.region.actual_backend.get_serialized("example")
+        if self.wrap == Serializer_PickleNoMeta_ProxyBackend:
+            assert f_pickle_loads(cached_raw) == value_str
+        elif (self.wrap == Serializer_Raw_ProxyBackend) or (
+            isinstance(self.wrap, Serializer_Raw_ProxyBackend)
+        ):
+            assert cached_raw.decode() == value_str
+        else:
+            assert f_pickle_loads(cached_raw) != value_str
+
+
+class RedisAlreadySerialized__RedisTest__PickleIntTime(
+    _RedisAlreadySerialized, TestCase
+):
+    wrap = Serializer_PickleIntTime_ProxyBackend
+
+
+class RedisAlreadySerialized__RedisTest__PickleNoMeta(
+    _RedisAlreadySerialized, TestCase
+):
+    wrap = Serializer_PickleNoMeta_ProxyBackend
+
+
+class RedisAlreadySerialized__RedisTest__Raw(_RedisAlreadySerialized, TestCase):
+    wrap = Serializer_Raw_ProxyBackend
+
+
+class RedisAlreadySerialized__RedisTest__PickleIntTime_Debug(
+    _RedisAlreadySerialized, TestCase
+):
+    _debug_cache_size = True
+    wrap = Serializer_PickleIntTime_ProxyBackend()
+    wrap.DEBUG_CACHE_SIZE = True
+
+
+class RedisAlreadySerialized__RedisTest__PickleNoMeta_Debug(
+    _RedisAlreadySerialized, TestCase
+):
+    wrap = Serializer_PickleNoMeta_ProxyBackend
+
+
+class RedisAlreadySerialized__RedisTest__Raw_debug(_RedisAlreadySerialized, TestCase):
+    _debug_cache_size = True
+    wrap = Serializer_Raw_ProxyBackend()
+    wrap.DEBUG_CACHE_SIZE = True
