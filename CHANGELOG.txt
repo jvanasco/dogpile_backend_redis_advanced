@@ -1,6 +1,19 @@
 v0.5.0
     working with modern dogpile
-    drop py3.7
+    drop py3.7 & py3.8
+    
+    backwards incompatibilities:
+    
+    dogpile had some extensive changes in 1.1.
+    this library is now implemented slightly differently.  
+
+    dogpile now has a concept of a "BytesBackend" that stores serialized forms
+    of the payload.  these types of backends currently pass serialized forms of
+    data through the `wraps`, instead of the raw objects.
+    
+    to get around this contraint, this package now implements redis as
+    non-serialized backend, and encoding is handled via a ProxyBackend instead
+    of in the backend itself.    
 
 v0.4.2
     missed py.typed

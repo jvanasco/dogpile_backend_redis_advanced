@@ -19,7 +19,6 @@ from typing import Union
 
 # pypi
 from dogpile.cache.api import BackendArguments
-from dogpile.cache.api import CacheMutex
 from dogpile.cache.api import KeyType
 from dogpile.cache.api import NoValue
 from dogpile.cache.api import SerializedReturnType
@@ -116,7 +115,7 @@ class RedisAdvancedBackend(RedisBackend):
         self.lock_class = _arguments.pop("lock_class", _RedisLockWrapper)
         self.lock_prefix = "%s{0}" % _arguments.pop("lock_prefix", "_lock")
 
-    def get_mutex(self, key: KeyType):
+    def get_mutex(self, key: KeyType) -> Optional[_RedisLockWrapper]:
         if self.distributed_lock:
             _mutex = self.writer_client.lock(
                 self.lock_prefix.format(key),
@@ -134,16 +133,16 @@ class RedisAlreadySerializedBackend(RedisAdvancedBackend):
     serializer = None
     deserializer = None
 
-    def get(self, key):
+    def get(self, key: KeyType) -> SerializedReturnType:
         return RedisBackend.get_serialized(self, key)
 
-    def get_multi(self, keys):
+    def get_multi(self, keys: Sequence[KeyType]) -> Sequence[SerializedReturnType]:
         return RedisBackend.get_serialized_multi(self, keys)
 
-    def set(self, key, value):
+    def set(self, key: KeyType, value: bytes) -> None:
         return RedisBackend.set_serialized(self, key, value)
 
-    def set_multi(self, mapping):
+    def set_multi(self, mapping: Mapping[KeyType, bytes]) -> None:
         return RedisBackend.set_serialized_multi(self, mapping)
 
 
@@ -202,7 +201,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     def get_mutex(
         self,
         key: Union[KeyType, HashKeyType],
-    ) -> Optional[CacheMutex]:
+    ) -> Optional[_RedisLockWrapper]:
         keystr: str
         if isinstance(key, tuple):
             # key can be a tuple

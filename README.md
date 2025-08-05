@@ -6,12 +6,13 @@ dogpile_backend_redis_advanced
 This is a plugin for the **dogpile.cache** system that offers some alternatives
 to the standard **Redis** datastore implementation.
 
-Two new backends are offered:
+Three new backends are offered:
 
 | backend | description |
 | --- | --- |
-| `dogpile_backend_redis_advanced` | extends the `dogpile.cache.redis` backend and allows for custom pickling overrides |
-| `dogpile_backend_redis_advanced_hstore` | extends `dogpile_backend_redis_advanced` and allows for some specific hstore operations |
+| `dogpile_backend_redis_advanced` | extends the `dogpile.cache.redis` backend and allows for a custom LockClass and Lock Prefix |
+| `dogpile_backend_redis_already_serialized` | extends `dogpile_backend_redis_advanced`, and allows for custom serialization |
+| `dogpile_backend_redis_advanced_hstore` | extends `dogpile_backend_redis_advanced`, and allows for some specific hstore operations |
 
 There is a negligible performance hit in `dogpile_backend_redis_advanced_hstore`,
 as cache keys must be inspected to determine if they are an hstore or not -- and
@@ -63,7 +64,7 @@ By adding in hooks for custom serializers, this backend lets developers choose
 better ways to cache data.  
 
 You may want a serializer that doesn't care about the expiry of cached data, so
-just uses simpler strings.:
+just uses simpler strings:
 
 | type  | example 1 | example 2 |
 | ----- | --------- | --------- |
@@ -146,30 +147,41 @@ then simply configure **dogpile.cache** with `dogpile_backend_redis_advanced` or
 `dogpile_backend_redis_advanced_hstore` as the backend.
 
 
-RedisAdvancedBackend
---------------------
+RedisAlreadySerializedBackend
+-----------------------------
 
-Two new configuration options are offered to specify custom serializers via 
-`loads` and `dumps`.  The default selection is to use **dogpile.cache**'s choice
-of  `pickle`.
+This backend can be used to do advanced serialization.
 
-This option was designed to support `msgpack` as the serializer:
+In this example, the `Serializer_PickleIntTime_ProxyBackend` is used to truncate the
+milliseconds off the CachedValue before going into the cache::
 
-    import msgpack
-    from dogpile.cache.api import CachedValue
+    from dogpile.cache import make_region
+    from dogpile.cache.proxy import ProxyBackend
+    from dogpile.cache.region import CacheRegion
+    import dogpile_backend_redis_advanced  # noqa: F401
+    from dogpile_backend_redis_advanced.cache.serializers import (
+        Serializer_PickleIntTime_ProxyBackend,
+    )
 
-    def msgpack_loads(value):
-        """pickle maintained the `CachedValue` wrapper of the tuple
-           msgpack does not, so it must be added back in.
-           """
-        value = msgpack.unpackb(value, use_list=False)
-        return CachedValue(*value)
+    # configure
+    region = make_region(name="pickle_int_time")
+    region.configure_from_config(
+        {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "expiration_time": 3600,
+            "wrap": [Serializer_PickleIntTime_ProxyBackend],
+            "backend": "dogpile_backend_redis_already_serialized",
+        },
+        prefix="",
+    )
+    region.serializer = None
+    region.deserializer = None
 
-    region = make_region().configure(
-        arguments= {'loads': msgpack_loads,
-                    'dumps': msgpack.packb,
-                    }
-        )
+    # use
+    region.set("example", value_str)
+    cached = region.get("example")
+    assert value_str == cached
 
 
 One can also abuse/misuse **dogpile.cache** and defer all cache expiry to
@@ -188,35 +200,39 @@ caching, this will allow you to leverage **dogpile.cache**'s excellent locking
 mechanism for handling read-through caching while slimming down your cache size
 and the traffic on-the-wire.  
 
-    import time
-    from dogpile.cache.api import CachedValue
-    from dogpile.cache.region import value_version
-    import msgpack
+    import pickle
 
-    def raw_dumps(value):
-        ''''pull the payload out of the CachedValue and serialize that
-        '''
-        value = value.payload
-        value = msgpack.packb(value)
-        return value
+    from dogpile.cache import make_region
+    from dogpile.cache.proxy import ProxyBackend
+    from dogpile.cache.region import CacheRegion
+    import dogpile_backend_redis_advanced  # noqa: F401
+    from dogpile_backend_redis_advanced.cache.serializers import (
+        Serializer_PickleNoMeta_ProxyBackend,
+    )
 
-    def raw_loads(value):
-        ''''unpack the value and return a CachedValue with the current time
-        '''
-        value = msgpack.unpackb(value, use_list=False)
-        return CachedValue(
-            value,
-            {
-                "ct": time.time(),
-                "v": value_version
-            })
+    # configure
+    region = make_region(name="pickle_no_meta")
+    region.configure_from_config(
+        {
+            "host": "127.0.0.1",
+            "port": 6379,
+            "expiration_time": 3600,
+            "wrap": [Serializer_PickleNoMeta_ProxyBackend],
+            "backend": "dogpile_backend_redis_already_serialized",
+        },
+        prefix="",
+    )
+    region.serializer = None
+    region.deserializer = None
 
-    region = make_region().configure(
-        arguments= {'loads': msgpack_loads,
-                    'dumps': msgpack.packb,
-                    'redis_expiration_time': 1,
-                    }
-        )
+    # use
+    region.set("example", value_str)
+    cached = region.get("example")
+    assert value_str == cached
+
+    cached_raw = region.actual_backend.get_serialized("example")
+    assert pickle.loads(cached_raw) == value_str
+    
 
 
 RedisAdvancedHstoreBackend
@@ -488,20 +504,7 @@ This ships with full tests.
 Much of the core package and test fixtures are from **dogpile.cache** and
 copyright from that project, which is available under the MIT license.
 
-Tests are handled through tox
-
-Examples:
-
-```
-tox
-tox -e py27 -- tests/cache/test_redis_backend.py
-tox -e py27 -- tests/cache/test_redis_backend.py::RedisAdvanced_SerializedRaw_Test
-tox -e py27 -- tests/cache/test_redis_backend.py::HstoreTest
-``` 
-
-Tests pass on the enclosed `redis.conf` file:
-
-```/usr/local/Cellar/redis/3.0.7/redis-server ./redis-server--6379.conf```
+Tests are handled through pytest; automated tests are handle via tox
 
 
 

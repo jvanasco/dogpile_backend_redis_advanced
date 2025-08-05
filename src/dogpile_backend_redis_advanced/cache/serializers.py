@@ -3,6 +3,7 @@ import pickle
 import time
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import Mapping
 from typing import Sequence
 from typing import Union
@@ -52,6 +53,10 @@ f_time = time.time
 f_pickle_loads = pickle.loads
 # f_pickle_dumps = pickle.dumps
 f_pickle_dumps = default_dumps_factory()
+
+
+def faked_meta() -> Dict:
+    return {"ct": f_time(), "v": value_version}
 
 
 class _CustomSerializerProxyBackend(ProxyBackend):
@@ -155,7 +160,59 @@ class _CustomSerializerProxyBackend(ProxyBackend):
         self.proxied.set_multi(mapping)
 
 
-class Serializer_PickleInt_ProxyBackend(_CustomSerializerProxyBackend):
+class _CustomSerializerNoMetaProxyBackend(_CustomSerializerProxyBackend):
+    """
+    This serializer does not cache metadata
+    """
+
+    def get(self, key: KeyType) -> Union[CachedValue, NoValue]:
+        serialized = self.proxied.get(key)
+        if serialized is NO_VALUE:
+            return NO_VALUE
+        value = self._deserialize(serialized)
+        return CachedValue(value, faked_meta())
+
+    def get_multi(
+        self,
+        keys: Sequence[KeyType],
+    ) -> Union[CachedValue, NoValue]:
+        backend_values = self.proxied.get_multi(keys)
+        for idx, serialized in enumerate(backend_values):
+            if serialized is not NO_VALUE:
+                value = self._deserialize(serialized)
+                backend_values[idx] = CachedValue(value, faked_meta())
+        return backend_values
+
+    def set(self, key: KeyType, value: CachedValue) -> None:
+        """make the timeout an int"""
+        serialized = self._serialize(value.payload)
+        self.proxied.set(key, serialized)
+
+    def set_multi(
+        self,
+        mapping: Mapping[KeyType, Union[CachedValue, NoValue]],
+    ) -> None:
+        for k in list(mapping.keys()):
+            value = mapping[k]
+            serialized = self._serialize(value.payload)
+            mapping[k] = serialized
+        self.proxied.set_multi(mapping)
+
+
+class Serializer_PickleIntTime_ProxyBackend(_CustomSerializerProxyBackend):
+    """
+    see docs for `_CustomSerializerProxyBackend`
+    """
+
+    _deserialize = f_pickle_loads
+
+    def _serialize(self, serialized: bytes):
+        return f_pickle_dumps(serialized)
+
+
+class Serializer_PickleNoMeta_ProxyBackend(
+    _CustomSerializerNoMetaProxyBackend
+):  # noqa: E501
     """
     see docs for `_CustomSerializerProxyBackend`
     """
@@ -184,7 +241,7 @@ class Serializer_Raw_ProxyBackend(_CustomSerializerProxyBackend):
         elif value.isdigit():
             if value[0] != "0":
                 value = int(value)
-        return value, {"ct": f_time(), "v": value_version}
+        return value, faked_meta()
 
     def _serialize(self, value: CachedValue) -> bytes:
         serialized = value.payload
