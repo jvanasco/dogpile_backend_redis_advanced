@@ -39,8 +39,6 @@ class _RedisAlreadySerialized:
             },
             prefix="",
         )
-        self.region.serializer = None
-        self.region.deserializer = None
 
     def test_set(self):
         value_str = "example value"
