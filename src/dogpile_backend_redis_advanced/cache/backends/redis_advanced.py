@@ -129,9 +129,10 @@ class RedisAdvancedBackend(RedisBackend):
         self,
         arguments: BackendArguments,
     ):
+        arguments = arguments.copy()
         super(RedisAdvancedBackend, self).__init__(arguments)
         self.lock_class = arguments.get("lock_class", _RedisLockWrapper)
-        lock_prefix = arguments.pop("lock_prefix", None)
+        lock_prefix = arguments.get("lock_prefix", None)
         if lock_prefix:
             if (not isinstance(lock_prefix, str)) or (
                 not RE_VALID_PREFIX.match(lock_prefix)
@@ -221,6 +222,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     """
 
     def __init__(self, arguments: BackendArguments):
+        arguments = arguments.copy()
         super(RedisAdvancedHstoreBackend, self).__init__(arguments)
         self.redis_expiration_time_hash = arguments.get(
             "redis_expiration_time_hash", None
