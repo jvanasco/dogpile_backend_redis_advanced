@@ -8,13 +8,16 @@ Provides backends for talking to `Redis <http://redis.io>`_.
 
 # stdlib
 from collections import defaultdict
+import re
 from typing import Dict
 from typing import List
 from typing import Mapping
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
+from typing import Type
 from typing import TYPE_CHECKING
+from typing import TypedDict
 from typing import Union
 
 # pypi
@@ -48,6 +51,19 @@ HashKeyType = Tuple[str, str]
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+RE_VALID_PREFIX = re.compile(r"^[\w\-\.\:]{2,10}$")
+
+
+class RedisAdvancedBackendArguments(TypedDict, total=False):
+    # todo: this extends forthcoming `dogpile.cache.backends.redis.RedisBackendKwargs`
+    lock_class: Type[_RedisLockWrapper]
+    lock_prefix: str
+
+
+class RedisAdvancedHstoreBackendArguments(RedisAdvancedBackendArguments):
+    redis_expiration_time_hash: Optional[bool]
 
 
 class RedisAdvancedBackend(RedisBackend):
@@ -89,14 +105,17 @@ class RedisAdvancedBackend(RedisBackend):
      .. versionadded:: 0.1.0
 
     :param lock_prefix: string, prefix used for generating locks. By default
-     the backend uses `_lock`.
+     the backend uses `_lok.`.
      .. versionadded:: 0.1.0
+
+     .. versionchanged:: 0.5.0
+        Previous versions, and ``dogpile.cache``, used "_lock" as the prefix.
 
     """
 
     # set in RedisBackend.__init__
     lock_class: _RedisLockWrapper
-    lock_prefix: str = "_lock"
+    lock_template: str = "_lok.{0}"
     debug_cache_size: bool
 
     # set in RedisAdvancedBackend.__init__
@@ -110,18 +129,25 @@ class RedisAdvancedBackend(RedisBackend):
         self,
         arguments: BackendArguments,
     ):
-        _arguments = dict(arguments.items())
-        super(RedisAdvancedBackend, self).__init__(_arguments)
-        self.lock_class = _arguments.pop("lock_class", _RedisLockWrapper)
-        self.lock_prefix = "%s{0}" % _arguments.pop("lock_prefix", "_lock")
+        super(RedisAdvancedBackend, self).__init__(arguments)
+        self.lock_class = arguments.get("lock_class", _RedisLockWrapper)
+        lock_prefix = arguments.pop("lock_prefix", None)
+        if lock_prefix:
+            if (not isinstance(lock_prefix, str)) or (
+                not RE_VALID_PREFIX.match(lock_prefix)
+            ):
+                raise ValueError("Invalid `lock_prefix` submitted: `%s`." % lock_prefix)
+            self.lock_template = "%s{0}" % lock_prefix
 
     def get_mutex(self, key: KeyType) -> Optional[_RedisLockWrapper]:
         if self.distributed_lock:
             _mutex = self.writer_client.lock(
-                self.lock_prefix.format(key),
+                self.lock_template.format(key),
                 timeout=self.lock_timeout,
                 sleep=self.lock_sleep,
                 thread_local=self.thread_local_lock,
+                blocking=self.lock_blocking,
+                blocking_timeout=self.lock_blocking_timeout,
             )
             return self.lock_class(_mutex)
         return None
@@ -130,8 +156,9 @@ class RedisAdvancedBackend(RedisBackend):
 class RedisAlreadySerializedBackend(RedisAdvancedBackend):
     """unsets the (de)serializers; pipes get/set to serialized methods"""
 
-    serializer = None
-    deserializer = None
+    # this purposefully breaks the BytesBackend contract
+    serializer = None  # type: ignore[assignment]
+    deserializer = None  # type: ignore[assignment]
 
     def get(self, key: KeyType) -> SerializedReturnType:
         return RedisBackend.get_serialized(self, key)
@@ -139,10 +166,12 @@ class RedisAlreadySerializedBackend(RedisAdvancedBackend):
     def get_multi(self, keys: Sequence[KeyType]) -> Sequence[SerializedReturnType]:
         return RedisBackend.get_serialized_multi(self, keys)
 
-    def set(self, key: KeyType, value: bytes) -> None:
+    def set(self, key: KeyType, value: bytes) -> None:  # type: ignore[override]
+        # override is for purposeful break against super class
         return RedisBackend.set_serialized(self, key, value)
 
-    def set_multi(self, mapping: Mapping[KeyType, bytes]) -> None:
+    def set_multi(self, mapping: Mapping[KeyType, bytes]) -> None:  # type: ignore[override]
+        # override is for purposeful break against super class
         return RedisBackend.set_serialized_multi(self, mapping)
 
 
@@ -192,9 +221,8 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     """
 
     def __init__(self, arguments: BackendArguments):
-        _arguments = dict(arguments.items())
-        super(RedisAdvancedHstoreBackend, self).__init__(_arguments)
-        self.redis_expiration_time_hash = _arguments.pop(
+        super(RedisAdvancedHstoreBackend, self).__init__(arguments)
+        self.redis_expiration_time_hash = arguments.get(
             "redis_expiration_time_hash", None
         )
 
@@ -258,8 +286,8 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
             _values = self.reader_client.mget(_keys_std)
             # build this back into the results in the right order
             if _values:
-                _values = zip(_keys_std_idx, _values)
-                for _idx, _v in _values:
+                _values2 = zip(_keys_std_idx, _values)
+                for _idx, _v in _values2:
                     values[_idx] = _v
 
         # group and batch the hashed as needed
@@ -278,8 +306,8 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
                 _values = self.reader_client.hmget(name, _hashed[name]["keys"])
                 # build this back into the results in the right order
                 if _values:
-                    _values = zip(_hashed[name]["idx"], _values)
-                    for _idx, _v in _values:
+                    _values2 = zip(_hashed[name]["idx"], _values)
+                    for _idx, _v in _values2:
                         values[_idx] = _v
 
         return [v if v is not None else NoValue.NO_VALUE for v in values]

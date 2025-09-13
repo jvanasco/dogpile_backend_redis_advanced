@@ -1,7 +1,11 @@
+from typing import Any
+from typing import Callable
+from typing import List
 from unittest import TestCase
 
 # pypi
 from dogpile.cache import make_region
+from dogpile.cache.api import NO_VALUE  # singleton
 from dogpile.cache.proxy import ProxyBackend
 from dogpile.cache.region import CacheRegion
 
@@ -23,6 +27,7 @@ from .test_redis_backend import REDIS_PORT
 
 
 class _RedisAlreadySerialized:
+    assertRaises: Callable
     region: CacheRegion
     wrap: ProxyBackend
     _debug_cache_size: bool = False
@@ -69,6 +74,37 @@ class _RedisAlreadySerialized:
         else:
             assert f_pickle_loads(cached_raw) != value_str
 
+    def _test_roundtrip(self, name: str, value: Any) -> None:
+        cache_key = "%s|%s" % (self.wrap.__class__.__name__, name)
+        self.region.set(cache_key, value)
+        cached = self.region.get(cache_key)
+        assert value == cached
+
+    def test_roundtrip__str(self):
+        self._test_roundtrip(name="string", value="STRING")
+
+    def test_roundtrip__int(self):
+        self._test_roundtrip(name="int", value=100)
+
+    def test_roundtrip__none(self):
+        self._test_roundtrip(name="None", value=None)
+
+    def test_roundtrip__NO_VALUE(self):
+        self._test_roundtrip(name="NO_VALUE", value=NO_VALUE)
+
+    def test_roundtrip__float(self):
+        if "float" in self._test_roundtrip__expected_fails:
+            self.assertRaises(
+                ValueError,
+                self._test_roundtrip,
+                name="float",
+                value=1.0,
+            )
+        else:
+            self._test_roundtrip(name="float", value=1.0)
+
+    _test_roundtrip__expected_fails: List[str] = []
+
 
 class RedisAlreadySerialized__RedisTest__PickleIntTime(
     _RedisAlreadySerialized, TestCase
@@ -84,6 +120,9 @@ class RedisAlreadySerialized__RedisTest__PickleNoMeta(
 
 class RedisAlreadySerialized__RedisTest__Raw(_RedisAlreadySerialized, TestCase):
     wrap = Serializer_Raw_ProxyBackend
+    _test_roundtrip__expected_fails = [
+        "float",
+    ]
 
 
 class RedisAlreadySerialized__RedisTest__PickleIntTime_Debug(
@@ -104,3 +143,6 @@ class RedisAlreadySerialized__RedisTest__Raw_debug(_RedisAlreadySerialized, Test
     _debug_cache_size = True
     wrap = Serializer_Raw_ProxyBackend()
     wrap.DEBUG_CACHE_SIZE = True
+    _test_roundtrip__expected_fails = [
+        "float",
+    ]

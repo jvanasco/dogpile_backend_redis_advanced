@@ -13,7 +13,15 @@ v0.5.0
     
     to get around this contraint, this package now implements redis as
     non-serialized backend, and encoding is handled via a ProxyBackend instead
-    of in the backend itself.    
+    of in the backend itself.
+    
+    the default lock_prefix has been changed:
+    
+        - _lock
+        - _lok.
+    
+    This "period" makes the name more readable when looking at keys, while the size
+    is preserved by dropping the "c".
 
 v0.4.2
     missed py.typed

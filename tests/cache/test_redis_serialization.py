@@ -3,7 +3,9 @@ import time
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
+from typing import Union
 from unittest import TestCase
 
 # pypi
@@ -69,7 +71,7 @@ KEY_STRING = "some_key"
 KEY_HASH = ("some_key", "h1")
 CLOUD_VALUE__BYTES = b"some value"
 
-_keys_mixed = [
+_keys_mixed: List[Union[int, Tuple[str, int]]] = [
     1,
     2,
     3,
@@ -110,23 +112,25 @@ def _keys_to_value(x: Any) -> str:
     return str(x * 2)
 
 
-KEYS_2_RAW__PAIRS: List[Tuple[str, str]] = []
-KEYS_2_ENCODED__PAIRS: List[Tuple[str, str]] = []
+KEYS_2_RAW__PAIRS: List[Tuple[Union[str, Tuple[str, ...]], str]] = []
+KEYS_2_ENCODED__PAIRS: List[Tuple[Sequence[str], bytes]] = []
 
 
 for k in _keys_mixed:
-    _value: Any
+    _value: str
     _value_encoded: bytes
+    _key: Union[str, Tuple[str, ...]]
     if isinstance(k, tuple):
-        k = tuple(str(i) for i in k)
-        _value = _keys_to_value(k[1])
-        KEYS_2_RAW__PAIRS.append((k, _value))
+        _key = tuple(str(i) for i in k)
+        _value = _keys_to_value(_key[1])
     else:
-        k = str(k)
-        _value = _keys_to_value(k)
+        _key = str(k)
+        _value = _keys_to_value(_key)
+
     _value_encoded = pickle.dumps(_value)
-    KEYS_2_RAW__PAIRS.append((k, _value))
-    KEYS_2_ENCODED__PAIRS.append((k, _value_encoded))
+
+    KEYS_2_RAW__PAIRS.append((_key, _value))
+    KEYS_2_ENCODED__PAIRS.append((_key, _value_encoded))
 
 
 class RedisAdvancedHstore_HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
