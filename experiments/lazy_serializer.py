@@ -1,13 +1,18 @@
-from __future__ import print_function
+# stdlib
 import datetime
-import msgpack
-import pdb
 import enum
+import pickle
 import struct
-import json
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Generator
+from typing import List
+from typing import Tuple
+from typing import Union
 
-
-from dogpile.util.compat import pickle
+# pypi
+import msgpack
 
 
 # ==============================================================================
@@ -31,24 +36,36 @@ class MsgpackTypes(enum.IntEnum):
     timedelta = 3
 
 
-def msgpack_alt_default(obj):
+def msgpack_alt_default(
+    obj: Union[datetime.datetime, datetime.date, datetime.timedelta]
+) -> msgpack.ExtType:
     if isinstance(obj, datetime.datetime):
         return msgpack.ExtType(
             MsgpackTypes.datetime.value,
-            struct.pack(">I", (obj - datetime.datetime(1970, 1, 1)).total_seconds()),
+            struct.pack(
+                ">I",
+                int((obj - datetime.datetime(1970, 1, 1)).total_seconds()),
+            ),
         )
     elif isinstance(obj, datetime.date):
         return msgpack.ExtType(
-            MsgpackTypes.date.value, struct.pack(">III", obj.year, obj.month, obj.day)
+            MsgpackTypes.date.value,
+            struct.pack(">III", obj.year, obj.month, obj.day),
         )
     elif isinstance(obj, datetime.timedelta):
         return msgpack.ExtType(
-            MsgpackTypes.timedelta.value, struct.pack(">I", obj.total_seconds())
+            MsgpackTypes.timedelta.value,
+            struct.pack(">I", int(obj.total_seconds())),
         )
     raise TypeError("Unknown type: %r" % (obj,))
 
 
-def msgpack_alt_ext_hook(code, data):
+def msgpack_alt_ext_hook(code: int, data: Any) -> Union[
+    datetime.date,
+    datetime.datetime,
+    datetime.timedelta,
+    msgpack.ExtType,
+]:
     type_ = MsgpackTypes(code)
     if type_ == MsgpackTypes.datetime:
         v = struct.unpack(">I", data)
@@ -67,7 +84,7 @@ def msgpack_alt_ext_hook(code, data):
 
 
 class LazyDeserializer(dict):
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> Any:
         if key not in self:
             raise KeyError(key)
         rval = dict.get(self, key)
@@ -86,16 +103,16 @@ class LazyDeserializer(dict):
                 self[key] = rval
         return rval
 
-    def values(self):
+    def values(self) -> List[Any]:
         return [self[key] for key in self]
 
-    def itervalues(self):
+    def itervalues(self) -> Generator[Any, None, None]:
         return (self[key] for key in self)
 
-    def items(self):
+    def items(self) -> Generator[Tuple[Any, Any], None, None]:
         return ((key, self[key]) for key in self)
 
-    def iteritems(self):
+    def iteritems(self) -> List[Tuple[str, Any]]:
         return list(self.items())
 
 
@@ -105,7 +122,7 @@ class LazyDeserializerAlt(LazyDeserializer):
 
 def override(
     self,
-    key,
+    key: str,
     KeyError=KeyError,
     dict=dict,
     isinstance=isinstance,
@@ -114,7 +131,7 @@ def override(
     datetime_date=datetime.date,
     datetime_timedelta=datetime.timedelta,
     int=int,
-):
+) -> Any:
     if key not in self:
         raise KeyError(key)
     rval = dict.get(self, key)
@@ -141,7 +158,7 @@ class MsgpackSerializer(object):
     """unified, self-contained serializer"""
 
     @classmethod
-    def encode_datetime(cls, dt):
+    def encode_datetime(cls, dt: datetime.datetime) -> Dict:
         """Serialize the given datetime.datetime object to a EPOCH seconds."""
         return {
             "__datetime__": True,
@@ -149,18 +166,24 @@ class MsgpackSerializer(object):
         }
 
     @classmethod
-    def encode_date(cls, d):
+    def encode_date(cls, d: datetime.date) -> Dict:
         """Serialize the given datetime.date object to a JSON string."""
         # Default is ISO 8601 compatible (standard notation).
-        return {"__date__": True, "0": "%04d%02d%02d" % (d.year, d.month, d.day)}
+        return {
+            "__date__": True,
+            "0": "%04d%02d%02d" % (d.year, d.month, d.day),
+        }
 
     @classmethod
-    def encode_timedelta(cls, t):
+    def encode_timedelta(cls, t: datetime.timedelta) -> Dict:
         """Serialize the given datetime.timedelta object to some seconds."""
-        return {"__timedelta__": True, "0": t.total_seconds()}
+        return {
+            "__timedelta__": True,
+            "0": t.total_seconds(),
+        }
 
     @classmethod
-    def encoder(cls, o):
+    def encoder(cls, o: Any) -> Any:
         if isinstance(o, datetime.datetime):
             return cls.encode_datetime(o)
         elif isinstance(o, datetime.date):
@@ -173,31 +196,45 @@ class MsgpackSerializer(object):
             return o
 
     @classmethod
-    def decoder(cls, obj):
+    def decode_datedata(
+        cls, obj
+    ) -> Union[datetime.datetime, datetime.date, datetime.timedelta]:
+        if b"__datetime__" in obj:
+            obj = datetime.datetime.fromtimestamp(obj["0"])
+        elif b"__date__" in obj:
+            # is is MUCH faster to use date() than strptime
+            # obj = datetime.datetime.strptime(obj['0'], "%Y%m%d").date()
+            d = obj["0"]
+            obj = datetime.date(int(d[:4]), int(d[4:6]), int(d[6:8]))
+        elif b"__timedelta__" in obj:
+            obj = datetime.timedelta(seconds=obj["0"])
+        return obj
+
+    @classmethod
+    def decoder(cls, obj: Any) -> Any:
         obj = cls.decode_datedata(obj)
         return obj
 
     @classmethod
-    def dumps(cls, payload):
+    def dumps(cls, payload: Any) -> bytes:
         # v = msgpack.packb(payload, default=cls.encoder, use_bin_type=True)
         v = msgpack_packb(payload, default=cls.encoder, use_bin_type=True)
         return v
 
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         # v = msgpack.unpackb(payload,  encoding="utf-8", use_list=True)
         v = msgpack_unpackb(payload, encoding="utf-8", use_list=True)
         v = LazyDeserializer(v)
-        c = v["date"]
-        c = v["datetime"]
-        c = v["timedelta"]
-        c = v["timedelta"]
+        assert "date" in v
+        assert "datetime" in v
+        assert "timedelta" in v
         return v
 
 
 def _make_iterencode(
     cls,
-    ## HACK: hand-optimized bytecode; turn globals into locals
+    # # HACK: hand-optimized bytecode; turn globals into locals
     ValueError=ValueError,
     dict=dict,
     float=float,
@@ -209,14 +246,16 @@ def _make_iterencode(
     iter=iter,
     set=set,
     _datetime=None,
-):
+) -> Callable:
     if _datetime is None:
         _datetime = datetime
 
     @classmethod
-    def _iterencode(cls, o):
+    def _iterencode(cls, o: Any) -> Any:
         if isinstance(o, _datetime.datetime):
-            """Serialize the given datetime.datetime object to a EPOCH seconds."""
+            """
+            Serialize the given datetime.datetime object to a EPOCH seconds.
+            """
             yield {
                 "__datetime__": True,
                 "0": (o - _datetime.datetime(1970, 1, 1)).total_seconds(),
@@ -224,10 +263,16 @@ def _make_iterencode(
         elif isinstance(o, _datetime.date):
             """Serialize the given datetime.date object to a JSON string."""
             # Default is ISO 8601 compatible (standard notation).
-            yield {"__date__": True, "0": "%04d%02d%02d" % (o.year, o.month, o.day)}
+            yield {
+                "__date__": True,
+                "0": "%04d%02d%02d" % (o.year, o.month, o.day),
+            }
         elif isinstance(o, _datetime.timedelta):
-            """Serialize the given datetime.timedelta object to some seconds."""
-            yield {"__timedelta__": True, "0": o.total_seconds()}
+            "Serialize the given datetime.timedelta object to some seconds."
+            yield {
+                "__timedelta__": True,
+                "0": o.total_seconds(),
+            }
         elif isinstance(o, set):
             yield tuple(o)
         else:
@@ -240,7 +285,7 @@ class MsgpackSerializer_Iterencode(MsgpackSerializer):
     _iterencode = None
 
     @classmethod
-    def encoder(cls, o):
+    def encoder(cls, o: Any):
         chunks = cls.iterencode(o)
         if not isinstance(chunks, (list, tuple)):
             chunks = list(chunks)
@@ -253,27 +298,33 @@ class MsgpackSerializer_Iterencode(MsgpackSerializer):
         return cls._iterencode(o)
 
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = msgpack_unpackb(payload, encoding="utf-8", use_list=True)
         v = LazyDeserializerAlt(v)
-        c = v["date"]
-        c = v["datetime"]
-        c = v["timedelta"]
-        c = v["timedelta"]
+        assert "date" in v
+        assert "datetime" in v
+        assert "timedelta" in v
         return v
 
 
 class MsgpackSerializer_Alt(object):
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = msgpack_unpackb(
-            payload, ext_hook=msgpack_alt_ext_hook, encoding="utf-8", use_list=True
+            payload,
+            ext_hook=msgpack_alt_ext_hook,
+            encoding="utf-8",
+            use_list=True,
         )
         return v
 
     @classmethod
-    def dumps(cls, payload):
-        v = msgpack_packb(payload, default=msgpack_alt_default, use_bin_type=True)
+    def dumps(cls, payload: Any) -> bytes:
+        v = msgpack_packb(
+            payload,
+            default=msgpack_alt_default,
+            use_bin_type=True,
+        )
         return v
 
 

@@ -1,16 +1,16 @@
-from __future__ import print_function
-
 # stdlib
 import datetime
-import pprint
-import timeit
-import pdb
 import enum
+import pickle
+import pprint
 import struct
+import timeit
+from typing import Any
+from typing import Callable
+from typing import Union
 
 # pypi
 import msgpack
-from dogpile.util.compat import pickle
 
 # ==============================================================================
 
@@ -34,24 +34,36 @@ class MsgpackTypes(enum.IntEnum):
     timedelta = 3
 
 
-def msgpack_alt_default(obj):
+def msgpack_alt_default(
+    obj: Union[datetime.datetime, datetime.date, datetime.timedelta]
+) -> msgpack.ExtType:
     if isinstance(obj, datetime.datetime):
         return msgpack.ExtType(
             MsgpackTypes.datetime.value,
-            struct.pack(">I", (obj - datetime.datetime(1970, 1, 1)).total_seconds()),
+            struct.pack(
+                ">I",
+                int((obj - datetime.datetime(1970, 1, 1)).total_seconds()),
+            ),
         )
     elif isinstance(obj, datetime.date):
         return msgpack.ExtType(
-            MsgpackTypes.date.value, struct.pack(">III", obj.year, obj.month, obj.day)
+            MsgpackTypes.date.value,
+            struct.pack(">III", obj.year, obj.month, obj.day),
         )
     elif isinstance(obj, datetime.timedelta):
         return msgpack.ExtType(
-            MsgpackTypes.timedelta.value, struct.pack(">I", obj.total_seconds())
+            MsgpackTypes.timedelta.value,
+            struct.pack(">I", int(obj.total_seconds())),
         )
     raise TypeError("Unknown type: %r" % (obj,))
 
 
-def msgpack_alt_ext_hook(code, data):
+def msgpack_alt_ext_hook(code: int, data: Any) -> Union[
+    datetime.date,
+    datetime.datetime,
+    datetime.timedelta,
+    msgpack.ExtType,
+]:
     type_ = MsgpackTypes(code)
     if type_ == MsgpackTypes.datetime:
         v = struct.unpack(">I", data)
@@ -65,7 +77,7 @@ def msgpack_alt_ext_hook(code, data):
     return msgpack.ExtType(code, data)
 
 
-def _msgpack_alt_default_factory():
+def _msgpack_alt_default_factory() -> Callable:
     """stick some elements in here for cpython"""
     extType = msgpack.ExtType
     mtypes = MsgpackTypes
@@ -74,16 +86,31 @@ def _msgpack_alt_default_factory():
     o_date = datetime.date
     o_timedelta = datetime.timedelta
 
-    def _msgpack_alt_default(obj):
+    def _msgpack_alt_default(
+        obj: Union[
+            datetime.date,
+            datetime.datetime,
+            datetime.timedelta,
+        ]
+    ) -> msgpack.ExtType:
         if isinstance(obj, o_datetime):
             return extType(
                 mtypes.datetime.value,
-                pck(">I", (obj - o_datetime(1970, 1, 1)).total_seconds()),
+                pck(
+                    ">I",
+                    int((obj - o_datetime(1970, 1, 1)).total_seconds()),
+                ),
             )
         elif isinstance(obj, o_date):
-            return extType(mtypes.date.value, pck(">III", obj.year, obj.month, obj.day))
+            return extType(
+                mtypes.date.value,
+                pck(">III", obj.year, obj.month, obj.day),
+            )
         elif isinstance(obj, o_timedelta):
-            return extType(mtypes.timedelta.value, pck(">I", obj.total_seconds()))
+            return extType(
+                mtypes.timedelta.value,
+                pck(">I", int(obj.total_seconds())),
+            )
         raise TypeError("Unknown type: %r" % (obj,))
 
     return _msgpack_alt_default
@@ -92,7 +119,7 @@ def _msgpack_alt_default_factory():
 msgpack_alt_default_factory = _msgpack_alt_default_factory()
 
 
-def _msgpack_alt_ext_hook_factory():
+def _msgpack_alt_ext_hook_factory() -> Callable:
     """stick some elements in here for cpython"""
     o_datetime = datetime.datetime
     o_date = datetime.date
@@ -101,7 +128,12 @@ def _msgpack_alt_ext_hook_factory():
     mtypes = MsgpackTypes
     unpck = struct.unpack
 
-    def _msgpack_alt_ext_hook(code, data):
+    def _msgpack_alt_ext_hook(code: int, data: Any) -> Union[
+        datetime.date,
+        datetime.datetime,
+        datetime.timedelta,
+        msgpack.ExtType,
+    ]:
         type_ = mtypes(code)
         if type_ == mtypes.datetime:
             v = unpck(">I", data)
@@ -125,21 +157,28 @@ msgpack_alt_ext_hook_factory = _msgpack_alt_ext_hook_factory()
 
 class MsgpackSerializer_Types(object):
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = msgpack_unpackb(
-            payload, ext_hook=msgpack_alt_ext_hook, encoding="utf-8", use_list=True
+            payload,
+            ext_hook=msgpack_alt_ext_hook,
+            encoding="utf-8",
+            use_list=True,
         )
         return v
 
     @classmethod
-    def dumps(cls, payload):
-        v = msgpack_packb(payload, default=msgpack_alt_default, use_bin_type=True)
+    def dumps(cls, payload: Any) -> bytes:
+        v = msgpack_packb(
+            payload,
+            default=msgpack_alt_default,
+            use_bin_type=True,
+        )
         return v
 
 
 class MsgpackSerializer_Types_Factory(object):
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook_factory,
@@ -149,7 +188,7 @@ class MsgpackSerializer_Types_Factory(object):
         return v
 
     @classmethod
-    def dumps(cls, payload):
+    def dumps(cls, payload: Any) -> bytes:
         v = msgpack_packb(
             payload, default=msgpack_alt_default_factory, use_bin_type=True
         )
@@ -158,12 +197,12 @@ class MsgpackSerializer_Types_Factory(object):
 
 class PickleSerializer(object):
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = pickle_loads(payload)
         return v
 
     @classmethod
-    def dumps(cls, payload):
+    def dumps(cls, payload: Any) -> bytes:
         v = pickle_dumps(payload)
         return v
 

@@ -25,6 +25,14 @@ v0.5.0
     
     Because the serializers and locks have changed, users should flush their cache
     when upgrading this package.
+    
+    renamings:
+        `dogpile_backend_redis_advanced_hstore` is now `dogpile_backend_redis_advanced.hstore`
+        
+    new backend:
+        `dogpile_backend_redis_advanced.already_serialized`
+    
+    packaging updates
 
 v0.4.2
     missed py.typed

@@ -63,7 +63,7 @@ class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate):
 
 
 class RedisAdvancedHstore_SerializedAlternate_Test(_SerializedAlternate):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
 
 
 # make this simple
@@ -134,7 +134,7 @@ for k in _keys_mixed:
 
 
 class RedisAdvancedHstore_HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
     config_args: ConfigDict = {
         "arguments": {
             "host": REDIS_HOST,
@@ -503,7 +503,7 @@ class RedisAdvancedHstore_HstoreTest_Expires_Hash_False(
 class RedisAdvancedHstore_DistributedMutex_CustomPrefixTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
     config_args: ConfigDict = {
         "arguments": {
             "host": REDIS_HOST,
@@ -599,7 +599,7 @@ class RedisDistributedLockProxy_Fatal(_RedisDistributedLockProxy):
 class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
     config_args: ConfigDict = {
         "arguments": {
             "host": "127.0.0.1",
@@ -658,7 +658,7 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
 class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
     config_args: ConfigDict = {
         "arguments": {
             "host": "127.0.0.1",

@@ -1,284 +1,710 @@
-{'region_msgpack': {'prime_time': 81.31008696556091,
-                    'samples': {500000: '\x92\xce\x00LK@\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xe7avW',
-                                '1': '\x92\n\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xdf\xa3\x08\xff',
-                                '100': '\x92\xcd\x03\xe8\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xdf\xa3w\xab',
-                                '1000': "\x92\xcd'\x10\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xdf\xa7\r(",
-                                'fizzbuzz|5000': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x1ep\xf8\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xf0\t\xed\xfe',
-                                'fizzbuzz|999': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x06\x15\t\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xef\xf7\xfb\x9c',
-                                'qkknasdkk|5000': '\x92\xa9qkknasdkk\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xf0\x98HM',
-                                'qkknasdkk|999': '\x92\xa9qkknasdkk\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x8f\xf07\xb0\x9f'},
-                    'used_memory': 188472048,
-                    'used_memory_human': '179.74M',
-                    'used_memory_lua': 36864,
-                    'used_memory_peak': 255440960,
-                    'used_memory_peak_human': '243.61M',
-                    'used_memory_rss': 232185856},
- 'region_msgpack_raw': {'prime_time': 81.45382905006409,
-                        'samples': {500000: '\xce\x00LK@',
-                                    '1': '\n',
-                                    '100': '\xcd\x03\xe8',
-                                    '1000': "\xcd'\x10",
-                                    'fizzbuzz|5000': '\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x1ep\xf8',
-                                    'fizzbuzz|999': '\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x06\x15\t',
-                                    'qkknasdkk|5000': '\xa9qkknasdkk',
-                                    'qkknasdkk|999': '\xa9qkknasdkk'},
-                        'used_memory': 170765872,
-                        'used_memory_human': '162.86M',
-                        'used_memory_lua': 36864,
-                        'used_memory_peak': 255440960,
-                        'used_memory_peak_human': '243.61M',
-                        'used_memory_rss': 214151168},
- 'region_msgpack_raw_hash': {'prime_time': 47.013303995132446,
-                             'samples': {500000: {'500000': '\xce\x00LK@',
-                                                  '500001': '\xce\x00LKJ',
-                                                  '500002': '\xce\x00LKT',
-                                                  '500003': '\xce\x00LK^',
-                                                  '500004': '\xce\x00LKh',
-                                                  '500005': '\xce\x00LKr',
-                                                  '500006': '\xce\x00LK|',
-                                                  '500007': '\xce\x00LK\x86',
-                                                  '500008': '\xce\x00LK\x90',
-                                                  '500009': '\xce\x00LK\x9a'},
-                                         '1': None,
-                                         '100': {'100': '\xcd\x03\xe8',
-                                                 '101': '\xcd\x03\xf2',
-                                                 '102': '\xcd\x03\xfc',
-                                                 '103': '\xcd\x04\x06',
-                                                 '104': '\xcd\x04\x10',
-                                                 '105': '\xcd\x04\x1a',
-                                                 '106': '\xcd\x04$',
-                                                 '107': '\xcd\x04.',
-                                                 '108': '\xcd\x048',
-                                                 '109': '\xcd\x04B'},
-                                         '1000': {'1000': "\xcd'\x10",
-                                                  '1001': "\xcd'\x1a",
-                                                  '1002': "\xcd'$",
-                                                  '1003': "\xcd'.",
-                                                  '1004': "\xcd'8",
-                                                  '1005': "\xcd'B",
-                                                  '1006': "\xcd'L",
-                                                  '1007': "\xcd'V",
-                                                  '1008': "\xcd'`",
-                                                  '1009': "\xcd'j"},
-                                         'fizzbuzz|5000': None,
-                                         'fizzbuzz|999': None,
-                                         'qkknasdkk|5000': None,
-                                         'qkknasdkk|999': None},
-                             'used_memory': 28518864,
-                             'used_memory_human': '27.20M',
-                             'used_memory_lua': 36864,
-                             'used_memory_peak': 255440960,
-                             'used_memory_peak_human': '243.61M',
-                             'used_memory_rss': 111243264},
- 'region_redis': {'prime_time': 99.11104416847229,
-                  'samples': {500000: '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01J@KL\x00}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x8f\xcf\x0e\xab\xb9u\x86Rq\x04.',
-                              '1': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01K\n}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x8f\xc5\xa3\x82,u\x86Rq\x04.',
-                              '100': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01M\xe8\x03}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x8f\xc5\xa4\x0eNu\x86Rq\x04.',
-                              '1000': "\x80\x02cdogpile.cache.api\nCachedValue\nq\x01M\x10'}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x8f\xc5\xaaM\xe8u\x86Rq\x04.",
-                              'fizzbuzz|5000': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01}q\x02(U\x03twoq\x03U\x08fizzbuzzq\x04U\x03oneq\x05J\xf8p\x1e\x00u}q\x06(U\x01vK\x01U\x02ctq\x07GA\xd5\xeb\x8f\xda6O\xb9u\x86Rq\x08.',
-                              'fizzbuzz|999': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01}q\x02(U\x03twoq\x03U\x08fizzbuzzq\x04U\x03oneq\x05J\t\x15\x06\x00u}q\x06(U\x01vK\x01U\x02ctq\x07GA\xd5\xeb\x8f\xda\x1b\xfb\xf8u\x86Rq\x08.',
-                              'qkknasdkk|5000': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01U\tqkknasdkkq\x02}q\x03(U\x01vK\x01U\x02ctq\x04GA\xd5\xeb\x8f\xda\xd2\xe1\xa8u\x86Rq\x05.',
-                              'qkknasdkk|999': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01U\tqkknasdkkq\x02}q\x03(U\x01vK\x01U\x02ctq\x04GA\xd5\xeb\x8f\xdal\x17\x8fu\x86Rq\x05.'},
-                  'used_memory': 249399504,
-                  'used_memory_human': '237.85M',
-                  'used_memory_lua': 36864,
-                  'used_memory_peak': 255440960,
-                  'used_memory_peak_human': '243.61M',
-                  'used_memory_rss': 293355520},
-'region_msgpack_local': {'prime_time': 34.37658405303955,
-                          'samples': {500000: '\x92\xce\x00LK@\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x86|\xb9(',
-                                      '1': '\x92\n\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xe9\x97\x9a',
-                                      '100': '\x92\xcd\x03\xe8\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xe9\xc2\xb5',
-                                      '1000': "\x92\xcd'\x10\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x83\xea\xe5\xcd",
-                                      'fizzbuzz': None,
-                                      'fizzbuzz|5000': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x1ep\xf8\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x89l\x85\xf0',
-                                      'fizzbuzz|999': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x06\x15\t\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x89e\xf0V',
-                                      'qkknasdkk|5000': '\x92\xa9qkknasdkk\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x89\xd6!\x1d',
-                                      'qkknasdkk|999': '\x92\xa9qkknasdkk\x82\xa1v\x01\xa2ct\xcbA\xd5\xeb\x92\x89\x88h\x8c'},
-                          'used_memory': 128160048,
-                          'used_memory_human': '122.22M',
-                          'used_memory_lua': 36864,
-                          'used_memory_peak': 188512848,
-                          'used_memory_peak_human': '179.78M',
-                          'used_memory_rss': 147005440},
- 'region_msgpack_raw_local': {'prime_time': 32.96810793876648,
-                              'samples': {500000: '\xce\x00LK@',
-                                          '1': '\n',
-                                          '100': '\xcd\x03\xe8',
-                                          '1000': "\xcd'\x10",
-                                          'fizzbuzz': None,
-                                          'fizzbuzz|5000': '\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x1ep\xf8',
-                                          'fizzbuzz|999': '\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x06\x15\t',
-                                          'qkknasdkk|5000': '\xa9qkknasdkk',
-                                          'qkknasdkk|999': '\xa9qkknasdkk'},
-                              'used_memory': 110455968,
-                              'used_memory_human': '105.34M',
-                              'used_memory_lua': 36864,
-                              'used_memory_peak': 188512848,
-                              'used_memory_peak_human': '179.78M',
-                              'used_memory_rss': 129085440},
- 'region_redis_local': {'prime_time': 44.744725942611694,
-                        'samples': {500000: '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01J@KL\x00}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x92x\xc4T\x93u\x86Rq\x04.',
-                                    '1': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01K\n}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x92u\x05]Ju\x86Rq\x04.',
-                                    '100': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01M\xe8\x03}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x92u\x05\x981u\x86Rq\x04.',
-                                    '1000': "\x80\x02cdogpile.cache.api\nCachedValue\nq\x01M\x10'}q\x02(U\x01vK\x01U\x02ctq\x03GA\xd5\xeb\x92u\x07\\du\x86Rq\x04.",
-                                    'fizzbuzz': None,
-                                    'fizzbuzz|5000': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01}q\x02(U\x03twoq\x03U\x08fizzbuzzq\x04U\x03oneq\x05J\xf8p\x1e\x00u}q\x06(U\x01vK\x01U\x02ctq\x07GA\xd5\xeb\x92}9\xd7,u\x86Rq\x08.',
-                                    'fizzbuzz|999': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01}q\x02(U\x03twoq\x03U\x08fizzbuzzq\x04U\x03oneq\x05J\t\x15\x06\x00u}q\x06(U\x01vK\x01U\x02ctq\x07GA\xd5\xeb\x92}/\xdcYu\x86Rq\x08.',
-                                    'qkknasdkk|5000': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01U\tqkknasdkkq\x02}q\x03(U\x01vK\x01U\x02ctq\x04GA\xd5\xeb\x92}\xa1\xf93u\x86Rq\x05.',
-                                    'qkknasdkk|999': '\x80\x02cdogpile.cache.api\nCachedValue\nq\x01U\tqkknasdkkq\x02}q\x03(U\x01vK\x01U\x02ctq\x04GA\xd5\xeb\x92}X4\xe3u\x86Rq\x05.'},
-                        'used_memory': 181501200,
-                        'used_memory_human': '173.09M',
-                        'used_memory_lua': 36864,
-                        'used_memory_peak': 188512848,
-                        'used_memory_peak_human': '179.78M',
-                        'used_memory_rss': 201175040},
- 'region_msgpack_local_int': {'prime_time': 36.377317905426025,
-                              'samples': {500000: '\x92\xce\x00LK@\xceW\xafc\x7f',
-                                          '1': '\x92\n\xceW\xafct',
-                                          '100': '\x92\xcd\x03\xe8\xceW\xafct',
-                                          '1000': "\x92\xcd'\x10\xceW\xafct",
-                                          'fizzbuzz': None,
-                                          'fizzbuzz|5000': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x1ep\xf8\xceW\xafc\x8d',
-                                          'fizzbuzz|999': '\x92\x82\xa3two\xa8fizzbuzz\xa3one\xce\x00\x06\x15\t\xceW\xafc\x8c',
-                                          'qkknasdkk|5000': '\x92\xa9qkknasdkk\xceW\xafc\x8e',
-                                          'qkknasdkk|999': '\x92\xa9qkknasdkk\xceW\xafc\x8d'},
-                              'used_memory': 126938576,
-                              'used_memory_human': '121.06M',
-                              'used_memory_lua': 36864,
-                              'used_memory_peak': 134519792,
-                              'used_memory_peak_human': '128.29M',
-                              'used_memory_rss': 145760256},
- 'region_json': {'prime_time': 101.25190281867981,
-                 'samples': {500000: '[5000000, {"v": 1, "ct": 1471113632.269579}]',
-                             '1': '[10, {"v": 1, "ct": 1471113592.885475}]',
-                             '100': '[1000, {"v": 1, "ct": 1471113592.89458}]',
-                             '1000': '[10000, {"v": 1, "ct": 1471113592.964313}]',
+initialize test -- killing `redis-server` if open
+`redis-server` is open, must kill 20714
+--------------------------------
+testing region: region_redis
+1. starting redis
+.
+2. priming region: region_redis
+priming took : 0.2942080497741699
+3. Checking info
+4. killing `redis-server`
+killing process 20718
+--------------------------------
+testing region: region_redis_local
+1. starting redis
+.
+2. priming region: region_redis_local
+priming took : 0.21319913864135742
+3. Checking info
+4. killing `redis-server`
+killing process 20720
+--------------------------------
+testing region: region_msgpack
+1. starting redis
+.
+2. priming region: region_msgpack
+priming took : 0.28865814208984375
+3. Checking info
+4. killing `redis-server`
+killing process 20723
+--------------------------------
+testing region: region_msgpack_local
+1. starting redis
+.
+2. priming region: region_msgpack_local
+priming took : 0.18551111221313477
+3. Checking info
+4. killing `redis-server`
+killing process 20725
+--------------------------------
+testing region: region_msgpack_local_int
+1. starting redis
+.
+2. priming region: region_msgpack_local_int
+priming took : 0.1867659091949463
+3. Checking info
+4. killing `redis-server`
+killing process 20727
+--------------------------------
+testing region: region_msgpack_raw
+1. starting redis
+.
+2. priming region: region_msgpack_raw
+priming took : 0.2823166847229004
+3. Checking info
+4. killing `redis-server`
+killing process 20729
+--------------------------------
+testing region: region_msgpack_raw_local
+1. starting redis
+.
+2. priming region: region_msgpack_raw_local
+priming took : 0.18672490119934082
+3. Checking info
+4. killing `redis-server`
+killing process 20731
+--------------------------------
+testing region: region_msgpack_raw_hash
+1. starting redis
+.
+2. priming region: region_msgpack_raw_hash
+priming took : 0.3127279281616211
+3. Checking info
+4. killing `redis-server`
+killing process 20733
+--------------------------------
+testing region: region_json
+1. starting redis
+.
+2. priming region: region_json
+priming took : 0.2784698009490967
+3. Checking info
+4. killing `redis-server`
+killing process 20735
+--------------------------------
+testing region: region_json_local
+1. starting redis
+.
+2. priming region: region_json_local
+priming took : 0.18313121795654297
+3. Checking info
+4. killing `redis-server`
+killing process 20737
+--------------------------------
+testing region: region_json_local_int
+1. starting redis
+.
+2. priming region: region_json_local_int
+priming took : 0.18388986587524414
+3. Checking info
+4. killing `redis-server`
+killing process 20739
+--------------------------------
+testing region: region_json_raw
+1. starting redis
+.
+2. priming region: region_json_raw
+priming took : 0.2781209945678711
+3. Checking info
+4. killing `redis-server`
+killing process 20741
+--------------------------------
+testing region: region_json_raw_local
+1. starting redis
+.
+2. priming region: region_json_raw_local
+priming took : 0.18410801887512207
+3. Checking info
+4. killing `redis-server`
+killing process 20743
+--------------------------------
+testing region: region_json_raw_hash
+1. starting redis
+.
+2. priming region: region_json_raw_hash
+priming took : 0.30727720260620117
+3. Checking info
+4. killing `redis-server`
+killing process 20746
+demo cleanup.  kill `redis-server`?
+`redis-server` is open, must kill 20719
+{'region_json': {'prime_time': 0.2784698009490967,
+                 'samples': {500.0: None,
+                             '1': b'{"ct": 1757794952.501954, "v": 2}|\x80\x05'
+                                  b'K\n.',
+                             '100': b'{"ct": 1757794952.510368, "v": 2'
+                                    b'}|\x80\x05\x95\x04\x00\x00'
+                                    b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                             '1000': None,
                              'fizzbuzz': None,
-                             'fizzbuzz|5000': '[{"two": "fizzbuzz", "one": 1995000}, {"v": 1, "ct": 1471113676.962879}]',
-                             'fizzbuzz|999': '[{"two": "fizzbuzz", "one": 398601}, {"v": 1, "ct": 1471113676.548996}]',
-                             'qkknasdkk|5000': '["qkknasdkk", {"v": 1, "ct": 1471113679.515666}]',
-                             'qkknasdkk|999': '["qkknasdkk", {"v": 1, "ct": 1471113677.830078}]'},
-                 'used_memory': 222924496,
-                 'used_memory_human': '212.60M',
-                 'used_memory_lua': 36864,
-                 'used_memory_peak': 229080160,
-                 'used_memory_peak_human': '218.47M',
-                 'used_memory_rss': 251256832},
- 'region_json_local': {'prime_time': 51.40509796142578,
-                       'samples': {500000: '[5000000, {"v": 1, "ct": 1471113717.221336}]',
-                                   '1': '[10, {"v": 1, "ct": 1471113698.76127}]',
-                                   '100': '[1000, {"v": 1, "ct": 1471113698.766087}]',
-                                   '1000': '[10000, {"v": 1, "ct": 1471113698.79845}]',
+                             'fizzbuzz|50.0': None,
+                             'fizzbuzz|999': None,
+                             'qkknasdkk|50.0': None,
+                             'qkknasdkk|999': None},
+                 'used_memory': 1690176,
+                 'used_memory_human': '1.61M',
+                 'used_memory_lua': 37888,
+                 'used_memory_peak': 1690176,
+                 'used_memory_peak_human': '1.61M',
+                 'used_memory_rss': 2691072},
+ 'region_json_local': {'prime_time': 0.18313121795654297,
+                       'samples': {500.0: None,
+                                   '1': b'{"ct": 1757794953.799395, "v": 2'
+                                        b'}|\x80\x05K\n.',
+                                   '100': b'{"ct": 1757794953.804351, "v": 2'
+                                          b'}|\x80\x05\x95\x04\x00\x00'
+                                          b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                   '1000': None,
                                    'fizzbuzz': None,
-                                   'fizzbuzz|5000': '[{"two": "fizzbuzz", "one": 1995000}, {"v": 1, "ct": 1471113737.895868}]',
-                                   'fizzbuzz|999': '[{"two": "fizzbuzz", "one": 398601}, {"v": 1, "ct": 1471113737.728886}]',
-                                   'qkknasdkk|5000': '["qkknasdkk", {"v": 1, "ct": 1471113739.577898}]',
-                                   'qkknasdkk|999': '["qkknasdkk", {"v": 1, "ct": 1471113738.390916}]'},
-                       'used_memory': 162612752,
-                       'used_memory_human': '155.08M',
-                       'used_memory_lua': 36864,
-                       'used_memory_peak': 229080160,
-                       'used_memory_peak_human': '218.47M',
-                       'used_memory_rss': 215543808},
- 'region_json_local_int': {'prime_time': 43.471275091171265,
-                           'samples': {500000: '[5000000, 1471113768]',
-                                       '1': '[10, 1471113753]',
-                                       '100': '[1000, 1471113753]',
-                                       '1000': '[10000, 1471113753]',
+                                   'fizzbuzz|50.0': None,
+                                   'fizzbuzz|999': None,
+                                   'qkknasdkk|50.0': None,
+                                   'qkknasdkk|999': None},
+                       'used_memory': 1627760,
+                       'used_memory_human': '1.55M',
+                       'used_memory_lua': 37888,
+                       'used_memory_peak': 1690176,
+                       'used_memory_peak_human': '1.61M',
+                       'used_memory_rss': 2711552},
+ 'region_json_local_int': {'prime_time': 0.18388986587524414,
+                           'samples': {500.0: None,
+                                       '1': b'{"ct": 1757794954.99999, "v": 2}'
+                                            b'|\x80\x05K\n.',
+                                       '100': b'{"ct": 1757794955.004839, "v'
+                                              b'": 2}|\x80\x05\x95\x04\x00\x00'
+                                              b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                       '1000': None,
                                        'fizzbuzz': None,
-                                       'fizzbuzz|5000': '[{"two": "fizzbuzz", "one": 1995000}, 1471113785]',
-                                       'fizzbuzz|999': '[{"two": "fizzbuzz", "one": 398601}, 1471113785]',
-                                       'qkknasdkk|5000': '["qkknasdkk", 1471113787]',
-                                       'qkknasdkk|999': '["qkknasdkk", 1471113785]'},
-                           'used_memory': 128648576,
-                           'used_memory_human': '122.69M',
-                           'used_memory_lua': 36864,
-                           'used_memory_peak': 229080160,
-                           'used_memory_peak_human': '218.47M',
-                           'used_memory_rss': 181026816},
- 'region_json_raw': {'prime_time': 89.7763979434967,
-                     'samples': {500000: '5000000',
-                                 '1': '10',
-                                 '100': '1000',
-                                 '1000': '10000',
+                                       'fizzbuzz|50.0': None,
+                                       'fizzbuzz|999': None,
+                                       'qkknasdkk|50.0': None,
+                                       'qkknasdkk|999': None},
+                           'used_memory': 1647264,
+                           'used_memory_human': '1.57M',
+                           'used_memory_lua': 37888,
+                           'used_memory_peak': 1690176,
+                           'used_memory_peak_human': '1.61M',
+                           'used_memory_rss': 2715648},
+ 'region_json_raw': {'prime_time': 0.2781209945678711,
+                     'samples': {500.0: None,
+                                 '1': b'{"ct": 1757794956.201828, "v": 2'
+                                      b'}|\x80\x05K\n.',
+                                 '100': b'{"ct": 1757794956.210293, "v": 2'
+                                        b'}|\x80\x05\x95\x04\x00\x00'
+                                        b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                 '1000': None,
                                  'fizzbuzz': None,
-                                 'fizzbuzz|5000': '{"two": "fizzbuzz", "one": 1995000}',
-                                 'fizzbuzz|999': '{"two": "fizzbuzz", "one": 398601}',
-                                 'qkknasdkk|5000': '"qkknasdkk"',
-                                 'qkknasdkk|999': '"qkknasdkk"'},
-                     'used_memory': 171554880,
-                     'used_memory_human': '163.61M',
-                     'used_memory_lua': 36864,
-                     'used_memory_peak': 229080160,
-                     'used_memory_peak_human': '218.47M',
-                     'used_memory_rss': 199376896},
- 'region_json_raw_local': {'prime_time': 39.60065507888794,
-                           'samples': {500000: '5000000',
-                                       '1': '10',
-                                       '100': '1000',
-                                       '1000': '10000',
-                                       'fizzbuzz': None,
-                                       'fizzbuzz|5000': '{"two": "fizzbuzz", "one": 1995000}',
-                                       'fizzbuzz|999': '{"two": "fizzbuzz", "one": 398601}',
-                                       'qkknasdkk|5000': '"qkknasdkk"',
-                                       'qkknasdkk|999': '"qkknasdkk"'},
-                           'used_memory': 111241280,
-                           'used_memory_human': '106.09M',
-                           'used_memory_lua': 36864,
-                           'used_memory_peak': 229080160,
-                           'used_memory_peak_human': '218.47M',
-                           'used_memory_rss': 163516416},
- 'region_json_raw_hash': {'prime_time': 55.645381927490234,
-                          'samples': {500000: {'500000': '5000000',
-                                               '500001': '5000010',
-                                               '500002': '5000020',
-                                               '500003': '5000030',
-                                               '500004': '5000040',
-                                               '500005': '5000050',
-                                               '500006': '5000060',
-                                               '500007': '5000070',
-                                               '500008': '5000080',
-                                               '500009': '5000090'},
+                                 'fizzbuzz|50.0': None,
+                                 'fizzbuzz|999': None,
+                                 'qkknasdkk|50.0': None,
+                                 'qkknasdkk|999': None},
+                     'used_memory': 1742384,
+                     'used_memory_human': '1.66M',
+                     'used_memory_lua': 37888,
+                     'used_memory_peak': 1742384,
+                     'used_memory_peak_human': '1.66M',
+                     'used_memory_rss': 2752512},
+ 'region_json_raw_hash': {'prime_time': 0.30727720260620117,
+                          'samples': {500.0: None,
                                       '1': None,
-                                      '100': {'100': '1000',
-                                              '101': '1010',
-                                              '102': '1020',
-                                              '103': '1030',
-                                              '104': '1040',
-                                              '105': '1050',
-                                              '106': '1060',
-                                              '107': '1070',
-                                              '108': '1080',
-                                              '109': '1090'},
-                                      '1000': {'1000': '10000',
-                                               '1001': '10010',
-                                               '1002': '10020',
-                                               '1003': '10030',
-                                               '1004': '10040',
-                                               '1005': '10050',
-                                               '1006': '10060',
-                                               '1007': '10070',
-                                               '1008': '10080',
-                                               '1009': '10090'},
-                                      'fizzbuzz': {'0': '{"two": "fizzbuzz", "one": 0}',
-                                                   '1': '{"two": "fizzbuzz", "one": 399}',
-                                                   '10': '{"two": "fizzbuzz", "one": 3990}',
-                                                   '100': '{"two": "fizzbuzz", "one": 39900}',
-                                                   '1000': '{"two": "fizzbuzz", "one": 399000}',
-                                                   '1001': '{"two": "fizzbuzz", "one": 399399}',
-                                                   '1002': '{"two": "fizzbuzz", "one": 399798}',
-                                                   '1003': '{"two": "fizzbuzz", "one": 400197}',
-                                                   '1004': '{"two": "fizzbuzz", "one": 400596}',
-                                                   '1005': '{"two": "fizzbuzz", "one": 400995}'},
-                                      'fizzbuzz|5000': None,
+                                      '100': {b'100': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\xe8\x03.',
+                                              b'101': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\xf2\x03.',
+                                              b'102': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\xfc\x03.',
+                                              b'103': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\x06\x04.',
+                                              b'104': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\x10\x04.',
+                                              b'105': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M\x1a\x04.',
+                                              b'106': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M$\x04.',
+                                              b'107': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M.\x04.',
+                                              b'108': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00M8\x04.',
+                                              b'109': b'{"ct": 1757794958.70'
+                                                      b'6809, "v": 2}|\x80\x05'
+                                                      b'\x95\x04\x00\x00'
+                                                      b'\x00\x00\x00\x00'
+                                                      b'\x00MB\x04.'},
+                                      '1000': None,
+                                      'fizzbuzz': {b'0': b'{"ct": 1757794958.75'
+                                                         b'9425, "v": 2'
+                                                         b'}|\x80\x05'
+                                                         b'\x95\x1e\x00\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00}\x94(\x8c\x03on'
+                                                         b'e\x94K\x00\x8c\x03tw'
+                                                         b'o\x94\x8c\x08fizz'
+                                                         b'buzz\x94u.',
+                                                   b'1': b'{"ct": 1757794958.75'
+                                                         b'9425, "v": 2'
+                                                         b'}|\x80\x05'
+                                                         b'\x95\x1f\x00\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00}\x94(\x8c\x03on'
+                                                         b'e\x94M\x8f'
+                                                         b'\x01\x8c\x03t'
+                                                         b'wo\x94\x8c\x08fiz'
+                                                         b'zbuzz\x94u.',
+                                                   b'10': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03on'
+                                                          b'e\x94M\x96'
+                                                          b'\x0f\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'11': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03one\x94M%'
+                                                          b'\x11\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'12': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03on'
+                                                          b'e\x94M\xb4'
+                                                          b'\x12\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'13': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03one\x94MC'
+                                                          b'\x14\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'14': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03on'
+                                                          b'e\x94M\xd2'
+                                                          b'\x15\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'15': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03one\x94Ma'
+                                                          b'\x17\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'16': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03on'
+                                                          b'e\x94M\xf0'
+                                                          b'\x18\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.',
+                                                   b'17': b'{"ct": 175779495'
+                                                          b'8.759425, "v": 2'
+                                                          b'}|\x80\x05'
+                                                          b'\x95\x1f\x00\x00'
+                                                          b'\x00\x00\x00\x00'
+                                                          b'\x00}\x94('
+                                                          b'\x8c\x03on'
+                                                          b'e\x94M\x7f'
+                                                          b'\x1a\x8c\x03t'
+                                                          b'wo\x94\x8c\x08fiz'
+                                                          b'zbuzz\x94u.'},
+                                      'fizzbuzz|50.0': None,
                                       'fizzbuzz|999': None,
-                                      'qkknasdkk|5000': None,
+                                      'qkknasdkk|50.0': None,
                                       'qkknasdkk|999': None},
-                          'used_memory': 24836160,
-                          'used_memory_human': '23.69M',
-                          'used_memory_lua': 36864,
-                          'used_memory_peak': 24836160,
-                          'used_memory_peak_human': '23.69M',
-                          'used_memory_rss': 25526272},
-}
+                          'used_memory': 1589056,
+                          'used_memory_human': '1.52M',
+                          'used_memory_lua': 37888,
+                          'used_memory_peak': 1742384,
+                          'used_memory_peak_human': '1.66M',
+                          'used_memory_rss': 2789376},
+ 'region_json_raw_local': {'prime_time': 0.18410801887512207,
+                           'samples': {500.0: None,
+                                       '1': b'{"ct": 1757794957.498868, "v": 2'
+                                            b'}|\x80\x05K\n.',
+                                       '100': b'{"ct": 1757794957.503924, "v'
+                                              b'": 2}|\x80\x05\x95\x04\x00\x00'
+                                              b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                       '1000': None,
+                                       'fizzbuzz': None,
+                                       'fizzbuzz|50.0': None,
+                                       'fizzbuzz|999': None,
+                                       'qkknasdkk|50.0': None,
+                                       'qkknasdkk|999': None},
+                           'used_memory': 1683104,
+                           'used_memory_human': '1.61M',
+                           'used_memory_lua': 37888,
+                           'used_memory_peak': 1742384,
+                           'used_memory_peak_human': '1.66M',
+                           'used_memory_rss': 2752512},
+ 'region_msgpack': {'prime_time': 0.28865814208984375,
+                    'samples': {500.0: None,
+                                '1': b'{"ct": 1757794944.9604108, "v": 2}|\x80'
+                                     b'\x05K\n.',
+                                '100': b'{"ct": 1757794944.97189, "v": 2}'
+                                       b'|\x80\x05\x95\x04\x00\x00\x00'
+                                       b'\x00\x00\x00\x00M\xe8\x03.',
+                                '1000': None,
+                                'fizzbuzz': None,
+                                'fizzbuzz|50.0': None,
+                                'fizzbuzz|999': None,
+                                'qkknasdkk|50.0': None,
+                                'qkknasdkk|999': None},
+                    'used_memory': 1584160,
+                    'used_memory_human': '1.51M',
+                    'used_memory_lua': 37888,
+                    'used_memory_peak': 1585872,
+                    'used_memory_peak_human': '1.51M',
+                    'used_memory_rss': 2465792},
+ 'region_msgpack_local': {'prime_time': 0.18551111221313477,
+                          'samples': {500.0: None,
+                                      '1': b'{"ct": 1757794946.26793, "v": 2}'
+                                           b'|\x80\x05K\n.',
+                                      '100': b'{"ct": 1757794946.272815, "v": 2'
+                                             b'}|\x80\x05\x95\x04\x00\x00'
+                                             b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                      '1000': None,
+                                      'fizzbuzz': None,
+                                      'fizzbuzz|50.0': None,
+                                      'fizzbuzz|999': None,
+                                      'qkknasdkk|50.0': None,
+                                      'qkknasdkk|999': None},
+                          'used_memory': 1520128,
+                          'used_memory_human': '1.45M',
+                          'used_memory_lua': 37888,
+                          'used_memory_peak': 1585872,
+                          'used_memory_peak_human': '1.51M',
+                          'used_memory_rss': 2514944},
+ 'region_msgpack_local_int': {'prime_time': 0.1867659091949463,
+                              'samples': {500.0: None,
+                                          '1': b'{"ct": 1757794947.470165, "v'
+                                               b'": 2}|\x80\x05K\n.',
+                                          '100': b'{"ct": 1757794947.474951, "v'
+                                                 b'": 2}|\x80\x05'
+                                                 b'\x95\x04\x00\x00'
+                                                 b'\x00\x00\x00\x00'
+                                                 b'\x00M\xe8\x03.',
+                                          '1000': None,
+                                          'fizzbuzz': None,
+                                          'fizzbuzz|50.0': None,
+                                          'fizzbuzz|999': None,
+                                          'qkknasdkk|50.0': None,
+                                          'qkknasdkk|999': None},
+                              'used_memory': 1538064,
+                              'used_memory_human': '1.47M',
+                              'used_memory_lua': 37888,
+                              'used_memory_peak': 1585872,
+                              'used_memory_peak_human': '1.51M',
+                              'used_memory_rss': 2514944},
+ 'region_msgpack_raw': {'prime_time': 0.2823166847229004,
+                        'samples': {500.0: None,
+                                    '1': b'{"ct": 1757794948.671476, "v": 2'
+                                         b'}|\x80\x05K\n.',
+                                    '100': b'{"ct": 1757794948.680073, "v": 2'
+                                           b'}|\x80\x05\x95\x04\x00\x00'
+                                           b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                    '1000': None,
+                                    'fizzbuzz': None,
+                                    'fizzbuzz|50.0': None,
+                                    'fizzbuzz|999': None,
+                                    'qkknasdkk|50.0': None,
+                                    'qkknasdkk|999': None},
+                        'used_memory': 1636384,
+                        'used_memory_human': '1.56M',
+                        'used_memory_lua': 37888,
+                        'used_memory_peak': 1636384,
+                        'used_memory_peak_human': '1.56M',
+                        'used_memory_rss': 2609152},
+ 'region_msgpack_raw_hash': {'prime_time': 0.3127279281616211,
+                             'samples': {500.0: None,
+                                         '1': None,
+                                         '100': {b'100': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\xe8\x03.',
+                                                 b'101': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\xf2\x03.',
+                                                 b'102': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\xfc\x03.',
+                                                 b'103': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\x06\x04.',
+                                                 b'104': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\x10\x04.',
+                                                 b'105': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M\x1a\x04.',
+                                                 b'106': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M$\x04.',
+                                                 b'107': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M.\x04.',
+                                                 b'108': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00M8\x04.',
+                                                 b'109': b'{"ct": 1757794951.17'
+                                                         b'96968, "v": 2}|\x80'
+                                                         b'\x05\x95\x04\x00'
+                                                         b'\x00\x00\x00\x00'
+                                                         b'\x00\x00MB\x04.'},
+                                         '1000': None,
+                                         'fizzbuzz': {b'0': b'{"ct": 175779495'
+                                                            b'1.2324018, "v": '
+                                                            b'2}|\x80'
+                                                            b'\x05\x95\x1e\x00'
+                                                            b'\x00\x00\x00\x00'
+                                                            b'\x00\x00}\x94'
+                                                            b'(\x8c\x03one\x94K'
+                                                            b'\x00\x8c\x03t'
+                                                            b'wo\x94\x8c\x08fiz'
+                                                            b'zbuzz\x94u.',
+                                                      b'1': b'{"ct": 175779495'
+                                                            b'1.2324018, "v": '
+                                                            b'2}|\x80'
+                                                            b'\x05\x95\x1f\x00'
+                                                            b'\x00\x00\x00\x00'
+                                                            b'\x00\x00}\x94'
+                                                            b'(\x8c\x03one\x94M'
+                                                            b'\x8f\x01\x8c\x03'
+                                                            b'two\x94\x8c\x08fi'
+                                                            b'zzbuzz\x94u.',
+                                                      b'10': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'\x96\x0f\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'11': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'%\x11\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'12': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'\xb4\x12\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'13': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'C\x14\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'14': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'\xd2\x15\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'15': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'a\x17\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'16': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'\xf0\x18\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.',
+                                                      b'17': b'{"ct": 175779495'
+                                                             b'1.2324018, "v": '
+                                                             b'2}|\x80'
+                                                             b'\x05\x95\x1f\x00'
+                                                             b'\x00\x00\x00\x00'
+                                                             b'\x00\x00}\x94'
+                                                             b'(\x8c\x03o'
+                                                             b'ne\x94M'
+                                                             b'\x7f\x1a\x8c\x03'
+                                                             b'two\x94'
+                                                             b'\x8c\x08fizzbu'
+                                                             b'zz\x94u.'},
+                                         'fizzbuzz|50.0': None,
+                                         'fizzbuzz|999': None,
+                                         'qkknasdkk|50.0': None,
+                                         'qkknasdkk|999': None},
+                             'used_memory': 1483024,
+                             'used_memory_human': '1.41M',
+                             'used_memory_lua': 37888,
+                             'used_memory_peak': 1636384,
+                             'used_memory_peak_human': '1.56M',
+                             'used_memory_rss': 2662400},
+ 'region_msgpack_raw_local': {'prime_time': 0.18672490119934082,
+                              'samples': {500.0: None,
+                                          '1': b'{"ct": 1757794949.969105, "v'
+                                               b'": 2}|\x80\x05K\n.',
+                                          '100': b'{"ct": 1757794949.973919, "v'
+                                                 b'": 2}|\x80\x05'
+                                                 b'\x95\x04\x00\x00'
+                                                 b'\x00\x00\x00\x00'
+                                                 b'\x00M\xe8\x03.',
+                                          '1000': None,
+                                          'fizzbuzz': None,
+                                          'fizzbuzz|50.0': None,
+                                          'fizzbuzz|999': None,
+                                          'qkknasdkk|50.0': None,
+                                          'qkknasdkk|999': None},
+                              'used_memory': 1573888,
+                              'used_memory_human': '1.50M',
+                              'used_memory_lua': 37888,
+                              'used_memory_peak': 1636384,
+                              'used_memory_peak_human': '1.56M',
+                              'used_memory_rss': 2613248},
+ 'region_redis': {'prime_time': 0.2942080497741699,
+                  'samples': {500.0: None,
+                              '1': b'{"ct": 1757794942.417716, "v": 2}|\x80\x04'
+                                   b'K\n.',
+                              '100': b'{"ct": 1757794942.4268532, "v": 2}|\x80'
+                                     b'\x04\x95\x04\x00\x00\x00\x00\x00'
+                                     b'\x00\x00M\xe8\x03.',
+                              '1000': None,
+                              'fizzbuzz': None,
+                              'fizzbuzz|50.0': None,
+                              'fizzbuzz|999': None,
+                              'qkknasdkk|50.0': None,
+                              'qkknasdkk|999': None},
+                  'used_memory': 1585872,
+                  'used_memory_human': '1.51M',
+                  'used_memory_lua': 37888,
+                  'used_memory_peak': 1585872,
+                  'used_memory_peak_human': '1.51M',
+                  'used_memory_rss': 2367488},
+ 'region_redis_local': {'prime_time': 0.21319913864135742,
+                        'samples': {500.0: None,
+                                    '1': b'{"ct": 1757794943.7277598, "v": '
+                                         b'2}|\x80\x04K\n.',
+                                    '100': b'{"ct": 1757794943.732634, "v": 2'
+                                           b'}|\x80\x04\x95\x04\x00\x00'
+                                           b'\x00\x00\x00\x00\x00M\xe8\x03.',
+                                    '1000': None,
+                                    'fizzbuzz': None,
+                                    'fizzbuzz|50.0': None,
+                                    'fizzbuzz|999': None,
+                                    'qkknasdkk|50.0': None,
+                                    'qkknasdkk|999': None},
+                        'used_memory': 1484272,
+                        'used_memory_human': '1.42M',
+                        'used_memory_lua': 37888,
+                        'used_memory_peak': 1585872,
+                        'used_memory_peak_human': '1.51M',
+                        'used_memory_rss': 2453504}}

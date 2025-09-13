@@ -40,7 +40,7 @@ class _RedisAlreadySerialized:
                 "port": REDIS_PORT,
                 "expiration_time": 3600,
                 "wrap": [self.wrap],
-                "backend": "dogpile_backend_redis_already_serialized",
+                "backend": "dogpile_backend_redis_advanced.already_serialized",
             },
             prefix="",
         )

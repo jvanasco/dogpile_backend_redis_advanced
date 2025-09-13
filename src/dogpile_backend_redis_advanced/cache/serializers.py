@@ -65,8 +65,9 @@ class _CustomSerializerProxyBackend(ProxyBackend):
     In order to use a Custom Serializer like this, we do two things:
 
     1- Include this as a wraps on a Region
-    2- Configure the Region to use "dogpile_backend_redis_already_serialized",
-       which does the following:
+    2- Configure the Region to use
+      "dogpile_backend_redis_advanced.already_serialized", which does
+      the following:
         unsets the Region's serializer/deserializer
         proxies the get/set commands to serialized versions
 
@@ -78,7 +79,7 @@ class _CustomSerializerProxyBackend(ProxyBackend):
              "port": REDIS_PORT,
              "expiration_time": 3600,
              "wrap": [CustomSerializerProxyBackend],
-             "backend": "dogpile_backend_redis_already_serialized",
+             "backend": "dogpile_backend_redis_advanced.already_serialized",
              },
             prefix="",
         )

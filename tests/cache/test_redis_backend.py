@@ -114,7 +114,7 @@ class RedisAdvanced__RedisTest(_TestRedisConn, _GenericBackendTestSuite):
 
 class RedisAdvancedHstore__RedisTest(RedisAdvanced__RedisTest):
     # implements: dogpile_cache/tests/cache/test_redis_backend.py::RedisTest
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -149,7 +149,7 @@ class RedisAdvanced__RedisDistributedMutexTest(_TestRedisConn, _GenericMutexTest
 class RedisAdvancedHStore__RedisDistributedMutexTest(
     RedisAdvanced__RedisDistributedMutexTest
 ):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -233,7 +233,7 @@ class RedisAdvanced__RedisAsyncCreationTest(_TestRedisConn, _GenericBackendFixtu
 class RedisAdvancedHstore__RedisAsyncCreationTest(
     RedisAdvanced__RedisAsyncCreationTest
 ):
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -383,4 +383,4 @@ class RedisAdvanced__RedisConnectionTest:
 
 class RedisAdvancedHstore__RedisConnectionTest(RedisAdvanced__RedisConnectionTest):
     # reimplements `RedisConnectionTest`
-    backend = "dogpile_backend_redis_advanced_hstore"
+    backend = "dogpile_backend_redis_advanced.hstore"

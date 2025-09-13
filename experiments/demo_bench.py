@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 """
 This script demonstrates how some caching is done.
 
@@ -15,34 +13,33 @@ strategy
 The results are printed below.
 """
 
-from dogpile.cache import make_region
-import dogpile_backend_redis_advanced
-
-import msgpack
-from dogpile.cache.api import CachedValue
-from dogpile.cache.region import value_version
-import psutil
-import redis
+# stdlib
 import json
-
-
-import sys
 import os
-import pdb
 import pprint
 import subprocess
 import time
+from typing import Any
 
+# pypi
+from dogpile.cache import make_region
+from dogpile.cache.api import CachedValue
+from dogpile.cache.region import value_version
+import msgpack
+import psutil
+import redis
 
-_demo_process_id = psutil.Process(os.getpid())
+# local
+import dogpile_backend_redis_advanced  # noqa: F401
 
 # ==============================================================================
 
+_demo_process_id = psutil.Process(os.getpid())
 
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = "6379"
 
-REDIS_BIN = "/usr/local/Cellar/redis/3.0.7/bin/redis-server"
+REDIS_BIN = "redis-server"
 REDIS_CONF = "./redis-server--6379.conf"
 
 # ==============================================================================
@@ -58,7 +55,7 @@ class SerializerMsgpackRaw(object):
     """'this is implemented as an object simply for code organization"""
 
     @classmethod
-    def dumps(cls, value):
+    def dumps(cls, value: Any) -> bytes:
         """'strip out the payload before packing"""
         if isinstance(value, CachedValue):
             value = value.payload
@@ -66,7 +63,7 @@ class SerializerMsgpackRaw(object):
         return value
 
     @classmethod
-    def loads(cls, value):
+    def loads(cls, value: bytes) -> Any:
         """'unpack the value and stash it into a CachedValue"""
         value = msgpack.unpackb(value, use_list=False)
         return CachedValue(value, {"ct": time.time(), "v": value_version})
@@ -76,7 +73,7 @@ class SerializerMsgpackInt(object):
     """'this is implemented as an object simply for code organization"""
 
     @classmethod
-    def dumps(cls, value):
+    def dumps(cls, value: Any) -> bytes:
         """'
         strip out the payload before packing,
         save the timestamp, but convert it to an int() first
@@ -92,7 +89,7 @@ class SerializerMsgpackInt(object):
         return value
 
     @classmethod
-    def loads(cls, value):
+    def loads(cls, value: bytes) -> Any:
         value = msgpack.unpackb(value, use_list=False)
         return CachedValue(value[0], {"ct": value[1], "v": value_version})
 
@@ -101,22 +98,22 @@ class SerializerJson(object):
     """'this is implemented as an object simply for code organization"""
 
     @classmethod
-    def dumps(cls, value):
+    def dumps(cls, value: Any) -> str:
         value = json.dumps(value)
         return value
 
     @classmethod
-    def loads(cls, value):
+    def loads(cls, value: str) -> Any:
         """'unpack the value and stash it into a CachedValue"""
         value = json.loads(value)
-        return CachedValue(value)
+        return CachedValue(value, {})
 
 
 class SerializerJsonRaw(object):
     """'this is implemented as an object simply for code organization"""
 
     @classmethod
-    def dumps(cls, value):
+    def dumps(cls, value: Any) -> str:
         """'strip out the payload before packing"""
         if isinstance(value, CachedValue):
             value = value.payload
@@ -124,7 +121,7 @@ class SerializerJsonRaw(object):
         return value
 
     @classmethod
-    def loads(cls, value):
+    def loads(cls, value: str) -> Any:
         """'unpack the value and stash it into a CachedValue"""
         value = json.loads(value)
         return CachedValue(value, {"ct": time.time(), "v": value_version})
@@ -134,7 +131,7 @@ class SerializerJsonInt(object):
     """'this is implemented as an object simply for code organization"""
 
     @classmethod
-    def dumps(cls, value):
+    def dumps(cls, value: Any) -> str:
         """'
         see SerializerMsgpackInt
         """
@@ -144,15 +141,15 @@ class SerializerJsonInt(object):
         return value
 
     @classmethod
-    def loads(cls, value):
+    def loads(cls, value: str) -> Any:
         value = json.loads(value)
         return CachedValue(value[0], {"ct": value[1], "v": value_version})
 
 
-def msgpack_loads(value):
+def msgpack_loads(value: bytes) -> Any:
     value = msgpack.unpackb(value, use_list=False)
     if isinstance(value, tuple):
-        return CachedValue(*value)
+        return CachedValue(*value, {})
     return value
 
 
@@ -160,7 +157,6 @@ def msgpack_loads(value):
 
 
 def initialize_dogpile():
-    global REGIONS
 
     REGIONS["region_redis"] = make_region().configure(
         "dogpile.cache.redis",
@@ -249,7 +245,7 @@ def initialize_dogpile():
     )
 
     REGIONS["region_msgpack_raw_hash"] = make_region().configure(
-        "dogpile_backend_redis_advanced_hstore",
+        "dogpile_backend_redis_advanced.hstore",
         expiration_time=3600,
         arguments={
             "host": REDIS_HOST,
@@ -328,7 +324,7 @@ def initialize_dogpile():
     )
 
     REGIONS["region_json_raw_hash"] = make_region().configure(
-        "dogpile_backend_redis_advanced_hstore",
+        "dogpile_backend_redis_advanced.hstore",
         expiration_time=3600,
         arguments={
             "host": REDIS_HOST,
@@ -421,7 +417,8 @@ def prime_region(region_name):
                 region.set_multi(mapping)
 
 
-# these statistics will be copied into our payload from the active redis server's info,
+# these statistics will be copied into our payload
+# from the active redis server's info,
 info_tracked_keys = (
     "used_memory",
     "used_memory_human",
@@ -447,7 +444,11 @@ redis_tracked_keys.append("%s|%s" % ("qkknasdkk", (max_b / 2)))
 if __name__ == "__main__":
     initialize_dogpile()
 
-    redis_connection = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    redis_connection = redis.StrictRedis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=0,
+    )
 
     def kill_redis():
         try:
@@ -457,7 +458,7 @@ if __name__ == "__main__":
             redis_connection.flushdb()  # just clear it!
             _old_process = psutil.Process(pid)
             _old_process.kill()
-        except redis.exceptions.ConnectionError as e:
+        except redis.exceptions.ConnectionError:
             pass
 
     print("initialize test -- killing `redis-server` if open")
@@ -499,7 +500,7 @@ if __name__ == "__main__":
             print(".")
             try:
                 _info = redis_connection.info()
-            except redis.exceptions.ConnectionError as e:
+            except redis.exceptions.ConnectionError:
                 pass
 
         print("2. priming region: %s" % _region_name)
@@ -521,7 +522,7 @@ if __name__ == "__main__":
         for k in redis_tracked_keys:
             try:
                 test_results[_region_name]["samples"][k] = redis_connection.get(k)
-            except redis.exceptions.ResponseError as e:
+            except redis.exceptions.ResponseError:
                 mapping = redis_connection.hgetall(k)
                 test_results[_region_name]["samples"][k] = {
                     _k: mapping[_k] for _k in sorted(list(mapping.keys()))[:10]
