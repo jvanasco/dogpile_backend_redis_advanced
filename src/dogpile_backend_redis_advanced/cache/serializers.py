@@ -5,6 +5,7 @@ from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import Mapping
+from typing import Optional
 from typing import Sequence
 from typing import Union
 
@@ -64,8 +65,9 @@ class _CustomSerializerProxyBackend(ProxyBackend):
     In order to use a Custom Serializer like this, we do two things:
 
     1- Include this as a wraps on a Region
-    2- Configure the Region to use "dogpile_backend_redis_already_serialized",
-       which does the following:
+    2- Configure the Region to use
+      "dogpile_backend_redis_advanced.already_serialized", which does
+      the following:
         unsets the Region's serializer/deserializer
         proxies the get/set commands to serialized versions
 
@@ -77,7 +79,7 @@ class _CustomSerializerProxyBackend(ProxyBackend):
              "port": REDIS_PORT,
              "expiration_time": 3600,
              "wrap": [CustomSerializerProxyBackend],
-             "backend": "dogpile_backend_redis_already_serialized",
+             "backend": "dogpile_backend_redis_advanced.already_serialized",
              },
             prefix="",
         )
@@ -206,7 +208,7 @@ class Serializer_PickleIntTime_ProxyBackend(_CustomSerializerProxyBackend):
 
     _deserialize = f_pickle_loads
 
-    def _serialize(self, serialized: bytes):
+    def _serialize(self, serialized: bytes) -> bytes:
         return f_pickle_dumps(serialized)
 
 
@@ -219,13 +221,31 @@ class Serializer_PickleNoMeta_ProxyBackend(
 
     _deserialize = f_pickle_loads
 
-    def _serialize(self, serialized: bytes):
+    def _serialize(self, serialized: bytes) -> bytes:
         return f_pickle_dumps(serialized)
 
 
 class Serializer_Raw_ProxyBackend(_CustomSerializerProxyBackend):
     """
     see docs for `_CustomSerializerProxyBackend`
+
+    This is a custom serializer designed to make cross-platform cacheable data.
+
+    Strings are encoded to bytes.
+
+    Other types are serialized to bytes and stored with the following mapping:
+
+        TypeIdentifier - 1 character
+        \x7f - ascii delete
+        Value
+
+    Supported formats
+
+        b\x7f - bytes
+        i\x7f - integer
+        @\x7f - Special
+            @\x7fNone = None
+            @\x7fNO_VALUE = dogpile.cache.api.NO_VALUE
     """
 
     def _deserialize(
@@ -233,22 +253,43 @@ class Serializer_Raw_ProxyBackend(_CustomSerializerProxyBackend):
         serialized: bytes,
         *args,
     ) -> Union[str, int, NoValue, None]:
-        value = serialized.decode()
-        if value == "@NO_VALUE":
-            value = NO_VALUE
-        elif value == "@None":
-            value = None
-        elif value.isdigit():
-            if value[0] != "0":
+        fmt: Optional[bytes] = None
+        value: Any
+        if b"\x7f" in serialized:
+            fmt, value = serialized.split(b"\x7f")
+            if fmt == b"b":
+                pass
+            elif fmt == b"@":
+                if value == b"NO_VALUE":
+                    value = NO_VALUE
+                elif value == b"None":
+                    value = None
+            elif fmt == b"i":
                 value = int(value)
+            else:
+                raise ValueError("unknown encoding: %s", serialized)
+        else:
+            value = serialized.decode()
         return value, faked_meta()
 
     def _serialize(self, value: CachedValue) -> bytes:
-        serialized = value.payload
-        if serialized is NO_VALUE:
-            serialized = "@NO_VALUE"
-        elif serialized is None:
-            serialized = "@None"
+        raw = value.payload
+        _raw: str
+        if raw is NO_VALUE:
+            _raw = "@\x7fNO_VALUE"
+        elif raw is None:
+            _raw = "@\x7fNone"
+        elif isinstance(raw, str):
+            if "\x7f" in raw:
+                raise ValueError(
+                    "cannot encode value containing escape character \\x7f"
+                )
+            _raw = raw
+        elif isinstance(raw, int):
+            _raw = "i\x7f%s" % raw
+        elif isinstance(raw, bytes):
+            # exit early as bytes does not need to be `.encode()`d.
+            return b"b\x7f%s" % raw
         else:
-            serialized = serialized.encode()
-        return serialized
+            raise ValueError("unsupported payload for raw serialization")
+        return _raw.encode()

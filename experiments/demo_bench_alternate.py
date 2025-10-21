@@ -1,32 +1,32 @@
-from __future__ import print_function
-from dogpile.cache import make_region
-import dogpile_backend_redis_advanced
-
-import msgpack
-from dogpile.cache.api import CachedValue
-from dogpile.cache.region import value_version
-import psutil
-import redis
-import json
-
-
-import sys
+# stdlib
+import dis
 import os
-import pdb
-import pprint
+import pickle
 import subprocess
 import time
+from typing import Any
+from typing import Callable
+from typing import List
+from typing import Tuple
 
+# pypi
+from dogpile.cache import make_region
+import psutil
+import redis
+
+# local
+import dogpile_backend_redis_advanced  # noqa: F401
+
+# ==============================================================================
 
 _demo_process_id = psutil.Process(os.getpid())
 
 # ==============================================================================
 
-
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = "6379"
 
-REDIS_BIN = "/usr/local/Cellar/redis/3.0.7/bin/redis-server"
+REDIS_BIN = "redis-server"
 REDIS_CONF = "./redis-server--6379.conf"
 
 # ==============================================================================
@@ -38,15 +38,12 @@ REGIONS = {}
 # ==============================================================================
 
 
-from dogpile.util.compat import pickle
-
-
-def default_dumps(v):
+def default_dumps(v: Any) -> bytes:
     return pickle.dumps(v, pickle.HIGHEST_PROTOCOL)
 
 
-def factory_dumps_a(pickle=pickle):
-    def default_dumps(v):
+def factory_dumps_a(pickle=pickle) -> Callable:
+    def default_dumps(v: Any) -> bytes:
         return pickle.dumps(v, pickle.HIGHEST_PROTOCOL)
 
     return default_dumps
@@ -55,10 +52,10 @@ def factory_dumps_a(pickle=pickle):
 default_dumps_a = factory_dumps_a()
 
 
-def factory_dumps_b(pickle=pickle):
+def factory_dumps_b(pickle=pickle) -> Callable:
     dumps = pickle.dumps
 
-    def default_dumps(v):
+    def default_dumps(v: Any) -> bytes:
         return dumps(v, pickle.HIGHEST_PROTOCOL)
 
     return default_dumps
@@ -67,10 +64,10 @@ def factory_dumps_b(pickle=pickle):
 default_dumps_b = factory_dumps_b()
 
 
-def factory_dumps_c():
+def factory_dumps_c() -> Callable:
     dumps = pickle.dumps
 
-    def default_dumps(v):
+    def default_dumps(v: Any) -> bytes:
         return dumps(v, pickle.HIGHEST_PROTOCOL)
 
     return default_dumps
@@ -78,20 +75,31 @@ def factory_dumps_c():
 
 default_dumps_c = factory_dumps_c()
 
-import dis
+print("=" * 80)
+print("dis.dis")
+print("")
+print("default_dumps::")
+dis.dis(default_dumps)
+print("")
 
-print(dis.dis(default_dumps))
-print(dis.dis(default_dumps_a))
-print(dis.dis(default_dumps_b))
-print(dis.dis(default_dumps_c))
+print("default_dumps_a::")
+dis.dis(default_dumps_a)
+print("")
+
+print("default_dumps_b::")
+dis.dis(default_dumps_b)
+print("")
+
+print("default_dumps_c::")
+dis.dis(default_dumps_c)
+print("")
+print("=" * 80)
 
 
 # ==============================================================================
 
 
 def initialize_dogpile():
-    global REGIONS
-
     REGIONS["pickle"] = make_region().configure(
         "dogpile_backend_redis_advanced",
         expiration_time=3600,
@@ -124,7 +132,7 @@ def initialize_dogpile():
     )
 
 
-fake_prefixes = (
+fake_prefixes: Tuple[str, ...] = (
     "foo",
     "foobar",
     "foobarbiz",
@@ -132,7 +140,7 @@ fake_prefixes = (
     "foobarbizbashfizzbuzz",
     "fizzbuzz",
 )
-fake_prefixes2 = (
+fake_prefixes2: Tuple[str, ...] = (
     "qkknasdkk",
     "kehzipqyfnslhtqnzjsgqolf",
     "7124n9jasdgqbozjayqkdhag",
@@ -146,7 +154,7 @@ if False:
     max_b = max_a / 10
 
 
-def prime_region(region_name):
+def prime_region(region_name: str) -> None:
     """
     faster if we use set_multi than not:
         for i in range(0, max_a):
@@ -209,8 +217,9 @@ def prime_region(region_name):
                 region.set_multi(mapping)
 
 
-# these statistics will be copied into our payload from the active redis server's info,
-info_tracked_keys = (
+# these statistics will be copied into our payload
+# from the active redis server's info,
+info_tracked_keys: Tuple[str, ...] = (
     "used_memory",
     "used_memory_human",
     "used_memory_rss",
@@ -219,8 +228,9 @@ info_tracked_keys = (
     "used_memory_lua",
 )
 
-# these redis keys will be copied into our payload from the active redis server
-redis_tracked_keys = [
+# these redis keys will be copied into our payload
+# from the active redis server
+redis_tracked_keys: List[str] = [
     "1",
     "100",
     "1000",
@@ -228,14 +238,18 @@ redis_tracked_keys = [
     "%s|%s" % ("qkknasdkk", 999),
     "fizzbuzz",  # will only appear in hashed store
 ]
-redis_tracked_keys.append(max_a / 2)
+redis_tracked_keys.append(str(max_a / 2))
 redis_tracked_keys.append("%s|%s" % ("fizzbuzz", (max_b / 2)))
 redis_tracked_keys.append("%s|%s" % ("qkknasdkk", (max_b / 2)))
 
 if __name__ == "__main__":
     initialize_dogpile()
 
-    redis_connection = redis.StrictRedis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+    redis_connection = redis.StrictRedis(
+        host=REDIS_HOST,
+        port=REDIS_PORT,
+        db=0,
+    )
 
     def kill_redis():
         try:
@@ -245,7 +259,7 @@ if __name__ == "__main__":
             redis_connection.flushdb()  # just clear it!
             _old_process = psutil.Process(pid)
             _old_process.kill()
-        except redis.exceptions.ConnectionError as e:
+        except redis.exceptions.ConnectionError:
             pass
 
     print("initialize test -- killing `redis-server` if open")
@@ -270,7 +284,7 @@ if __name__ == "__main__":
             print(".")
             try:
                 _info = redis_connection.info()
-            except redis.exceptions.ConnectionError as e:
+            except redis.exceptions.ConnectionError:
                 pass
 
         print("2. priming region: %s" % _region_name)
@@ -288,7 +302,7 @@ if __name__ == "__main__":
             for k in redis_tracked_keys:
                 try:
                     r = redis_connection.get(k)
-                except redis.exceptions.ResponseError as e:
+                except redis.exceptions.ResponseError:
                     mapping = redis_connection.hgetall(k)
         t_end = time.time()
         test_results[_region_name]["fetch_time"] = t_end - t_start

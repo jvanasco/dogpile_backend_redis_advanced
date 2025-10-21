@@ -1,9 +1,12 @@
-from __future__ import print_function
+# stdlib
 import datetime
+import pickle
+from typing import Any
+from typing import Dict
+from typing import Union
+
+# pypi
 import msgpack
-
-from dogpile.util.compat import pickle
-
 
 # ==============================================================================
 
@@ -12,7 +15,7 @@ class MsgpackSerializer(object):
     """unified, self-contained serializer"""
 
     @classmethod
-    def encode_datetime(cls, dt):
+    def encode_datetime(cls, dt: datetime.datetime) -> Dict:
         """Serialize the given datetime.datetime object to a EPOCH seconds."""
         return {
             "__datetime__": True,
@@ -20,18 +23,26 @@ class MsgpackSerializer(object):
         }
 
     @classmethod
-    def encode_date(cls, d):
+    def encode_date(cls, d: datetime.date) -> Dict:
         """Serialize the given datetime.date object to a JSON string."""
         # Default is ISO 8601 compatible (standard notation).
-        return {"__date__": True, "0": "%04d%02d%02d" % (d.year, d.month, d.day)}
+        return {
+            "__date__": True,
+            "0": "%04d%02d%02d" % (d.year, d.month, d.day),
+        }
 
     @classmethod
-    def encode_timedelta(cls, t):
+    def encode_timedelta(cls, t: datetime.timedelta) -> Dict:
         """Serialize the given datetime.timedelta object to some seconds."""
-        return {"__timedelta__": True, "0": t.total_seconds()}
+        return {
+            "__timedelta__": True,
+            "0": t.total_seconds(),
+        }
 
     @classmethod
-    def decode_datedata(cls, obj):
+    def decode_datedata(
+        cls, obj
+    ) -> Union[datetime.datetime, datetime.date, datetime.timedelta]:
         if b"__datetime__" in obj:
             obj = datetime.datetime.fromtimestamp(obj["0"])
         elif b"__date__" in obj:
@@ -44,7 +55,7 @@ class MsgpackSerializer(object):
         return obj
 
     @classmethod
-    def encoder(cls, o):
+    def encoder(cls, o: Any) -> Any:
         if isinstance(o, datetime.datetime):
             return cls.encode_datetime(o)
         elif isinstance(o, datetime.date):
@@ -57,17 +68,17 @@ class MsgpackSerializer(object):
             return o
 
     @classmethod
-    def decoder(cls, obj):
+    def decoder(cls, obj: Any) -> Any:
         obj = cls.decode_datedata(obj)
         return obj
 
     @classmethod
-    def dumps(cls, payload):
+    def dumps(cls, payload: Any) -> bytes:
         v = msgpack.packb(payload, default=cls.encoder, use_bin_type=True)
         return v
 
     @classmethod
-    def loads(cls, payload):
+    def loads(cls, payload: bytes) -> Any:
         v = msgpack.unpackb(payload, object_hook=cls.decoder, encoding="utf-8")
         return v
 

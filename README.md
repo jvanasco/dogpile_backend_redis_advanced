@@ -3,18 +3,19 @@
 dogpile_backend_redis_advanced
 ==============================
 
-This is a plugin for the **dogpile.cache** system that offers some alternatives
-to the standard **Redis** datastore implementation.
+This is a plugin extension for the **dogpile.cache** system that offers some
+alternatives to the standard **Redis** datastore implementation via 
+`dogpile.cache.redis`.
 
 Three new backends are offered:
 
 | backend | description |
 | --- | --- |
 | `dogpile_backend_redis_advanced` | extends the `dogpile.cache.redis` backend and allows for a custom LockClass and Lock Prefix |
-| `dogpile_backend_redis_already_serialized` | extends `dogpile_backend_redis_advanced`, and allows for custom serialization |
-| `dogpile_backend_redis_advanced_hstore` | extends `dogpile_backend_redis_advanced`, and allows for some specific hstore operations |
+| `dogpile_backend_redis_advanced.already_serialized` | extends `dogpile_backend_redis_advanced`, and allows for custom serialization |
+| `dogpile_backend_redis_advanced.hstore` | extends `dogpile_backend_redis_advanced`, and allows for some specific hstore operations |
 
-There is a negligible performance hit in `dogpile_backend_redis_advanced_hstore`,
+There is a negligible performance hit in `dogpile_backend_redis_advanced.hstore`
 as cache keys must be inspected to determine if they are an hstore or not -- and
 there are some operations involved to coordinate values.
 
@@ -144,7 +145,7 @@ myfile.py
     import dogpile_backend_redis_advanced
 
 then simply configure **dogpile.cache** with `dogpile_backend_redis_advanced` or 
-`dogpile_backend_redis_advanced_hstore` as the backend.
+`dogpile_backend_redis_advanced.hstore` as the backend.
 
 
 RedisAlreadySerializedBackend
@@ -171,7 +172,7 @@ milliseconds off the CachedValue before going into the cache::
             "port": 6379,
             "expiration_time": 3600,
             "wrap": [Serializer_PickleIntTime_ProxyBackend],
-            "backend": "dogpile_backend_redis_already_serialized",
+            "backend": "dogpile_backend_redis_advanced.already_serialized",
         },
         prefix="",
     )
@@ -218,7 +219,7 @@ and the traffic on-the-wire.
             "port": 6379,
             "expiration_time": 3600,
             "wrap": [Serializer_PickleNoMeta_ProxyBackend],
-            "backend": "dogpile_backend_redis_already_serialized",
+            "backend": "dogpile_backend_redis_advanced.already_serialized",
         },
         prefix="",
     )
@@ -305,8 +306,8 @@ data -- sample keys are pulled for each format.
 | region_msgpack_local_int | 126938576    | 121.06M      | 50.89%   | -             | Y, `int(time)`  | `dogpile_backend_redis_advanced`        | msgpack |
 | region_json_raw_local    | 111241280    | 106.09M      | 44.60%   | -             | -               | `dogpile_backend_redis_advanced`        | json    |
 | region_msgpack_raw_local | 110455968    | 105.34M      | 44.29%   | -             | -               | `dogpile_backend_redis_advanced`        | msgpack |
-| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y, only keys  | -               | `dogpile_backend_redis_advanced_hstore` | msgpack |
-| region_json_raw_hash     | 24836160     | 23.69M       |  9.96%   | Y, only keys  | -               | `dogpile_backend_redis_advanced_hstore` | json    |
+| region_msgpack_raw_hash  | 28518864     | 27.20M       | 11.44%   | Y, only keys  | -               | `dogpile_backend_redis_advanced.hstore` | msgpack |
+| region_json_raw_hash     | 24836160     | 23.69M       |  9.96%   | Y, only keys  | -               | `dogpile_backend_redis_advanced.hstore` | json    |
 
 Notes:
 
