@@ -55,6 +55,7 @@ setup(
     ),
     package_dir={"": "src"},
     package_data={"dogpile_backend_redis_advanced": ["py.typed"]},
+    python_requires=">=3.10",  # dogpile.cache 1.5.0 requires 3.10
     include_package_data=True,
     zip_safe=False,
     install_requires=install_requires,
