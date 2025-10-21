@@ -59,7 +59,6 @@ RE_VALID_PREFIX = re.compile(r"^[\w\-\.\:]{2,10}$")
 class RedisAdvancedBackendArguments(TypedDict, total=False):
     # todo: this extends forthcoming `dogpile.cache.backends.redis.RedisBackendKwargs`
     lock_class: Type[_RedisLockWrapper]
-    lock_prefix: str
 
 
 class RedisAdvancedHstoreBackendArguments(RedisAdvancedBackendArguments):
@@ -104,13 +103,17 @@ class RedisAdvancedBackend(RedisBackend):
 
      .. versionadded:: 0.1.0
 
-    :param lock_prefix: string, prefix used for generating locks. By default
-     the backend uses `_lok.`.
-     .. versionadded:: 0.1.0
+    Deprecated::
 
-     .. versionchanged:: 0.5.0
+    `lock_prefix`::
+
         Previous versions, and ``dogpile.cache``, used "_lock" as the prefix.
 
+        This package previously used `_lok.` as the default prefix.
+
+        The custom `lock_prefix` command was ported into `dogpile.cache==1.5.0`
+
+        .. versionchanged:: 0.5.0
     """
 
     # set in RedisBackend.__init__
@@ -132,13 +135,6 @@ class RedisAdvancedBackend(RedisBackend):
         arguments = arguments.copy()
         super(RedisAdvancedBackend, self).__init__(arguments)
         self.lock_class = arguments.get("lock_class", _RedisLockWrapper)
-        lock_prefix = arguments.get("lock_prefix", None)
-        if lock_prefix:
-            if (not isinstance(lock_prefix, str)) or (
-                not RE_VALID_PREFIX.match(lock_prefix)
-            ):
-                raise ValueError("Invalid `lock_prefix` submitted: `%s`." % lock_prefix)
-            self.lock_template = "%s{0}" % lock_prefix
 
     def get_mutex(self, key: KeyType) -> Optional[_RedisLockWrapper]:
         if self.distributed_lock:
