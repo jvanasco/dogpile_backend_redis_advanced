@@ -1,3 +1,9 @@
+Unreleased
+    - Consolidate packaging and tox settings in setup.cfg and mypy settings
+      in pyproject.toml.
+    - Run Redis tests against Python 3.10 through 3.15 in GitHub Actions
+      and publish HTML coverage reports for each Python version.
+
 v0.5.0
     working with modern dogpile
     - drop py3.7, py3.8, py3.9

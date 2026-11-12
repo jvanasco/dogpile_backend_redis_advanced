@@ -603,7 +603,7 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
     config_args: ConfigDict = {
         "arguments": {
             "host": "127.0.0.1",
-            "port": 6379,
+            "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
@@ -662,7 +662,7 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
     config_args: ConfigDict = {
         "arguments": {
             "host": "127.0.0.1",
-            "port": 6379,
+            "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
