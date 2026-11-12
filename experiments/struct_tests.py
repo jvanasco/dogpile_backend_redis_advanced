@@ -1,11 +1,11 @@
-# stdlib
+"""Compare struct-based MessagePack codecs with pickle."""
+
 import datetime
 import enum
 import pickle
-import pprint
 import struct
-import timeit
 from typing import Any
+from typing import TYPE_CHECKING
 from typing import Callable
 from typing import Union
 
@@ -17,7 +17,7 @@ import msgpack
 msgpack_packb = msgpack.packb
 msgpack_unpackb = msgpack.unpackb
 pickle_loads = pickle.loads
-pickle_dumps = pickle.dumps
+
 
 """
 TIPS-
@@ -26,6 +26,9 @@ If you have a lot of objects per request, this makes a difference:
     msgpack_packb = msgpack.packb
     msgpack_unpackb = msgpack.unpackb
 """
+
+
+_EPOCH = datetime.datetime(1970, 1, 1)
 
 
 class MsgpackTypes(enum.IntEnum):
@@ -42,7 +45,7 @@ def msgpack_alt_default(
             MsgpackTypes.datetime.value,
             struct.pack(
                 ">I",
-                int((obj - datetime.datetime(1970, 1, 1)).total_seconds()),
+                int((obj - _EPOCH).total_seconds()),
             ),
         )
     elif isinstance(obj, datetime.date):
@@ -67,7 +70,7 @@ def msgpack_alt_ext_hook(code: int, data: Any) -> Union[
     type_ = MsgpackTypes(code)
     if type_ == MsgpackTypes.datetime:
         v = struct.unpack(">I", data)
-        return datetime.datetime.fromtimestamp(v[0])
+        return _EPOCH + datetime.timedelta(seconds=v[0])
     elif type_ == MsgpackTypes.date:
         v = struct.unpack(">III", data)
         return datetime.date(v[0], v[1], v[2])
@@ -82,6 +85,7 @@ def _msgpack_alt_default_factory() -> Callable:
     extType = msgpack.ExtType
     mtypes = MsgpackTypes
     pck = struct.pack
+    epoch = _EPOCH
     o_datetime = datetime.datetime
     o_date = datetime.date
     o_timedelta = datetime.timedelta
@@ -98,7 +102,7 @@ def _msgpack_alt_default_factory() -> Callable:
                 mtypes.datetime.value,
                 pck(
                     ">I",
-                    int((obj - o_datetime(1970, 1, 1)).total_seconds()),
+                    int((obj - epoch).total_seconds()),
                 ),
             )
         elif isinstance(obj, o_date):
@@ -121,12 +125,12 @@ msgpack_alt_default_factory = _msgpack_alt_default_factory()
 
 def _msgpack_alt_ext_hook_factory() -> Callable:
     """stick some elements in here for cpython"""
-    o_datetime = datetime.datetime
     o_date = datetime.date
     o_timedelta = datetime.timedelta
     extType = msgpack.ExtType
     mtypes = MsgpackTypes
     unpck = struct.unpack
+    epoch = _EPOCH
 
     def _msgpack_alt_ext_hook(code: int, data: Any) -> Union[
         datetime.date,
@@ -137,7 +141,7 @@ def _msgpack_alt_ext_hook_factory() -> Callable:
         type_ = mtypes(code)
         if type_ == mtypes.datetime:
             v = unpck(">I", data)
-            return o_datetime.fromtimestamp(v[0])
+            return epoch + o_timedelta(seconds=v[0])
         elif type_ == mtypes.date:
             v = unpck(">III", data)
             return o_date(v[0], v[1], v[2])
@@ -161,7 +165,6 @@ class MsgpackSerializer_Types(object):
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook,
-            encoding="utf-8",
             use_list=True,
         )
         return v
@@ -182,7 +185,6 @@ class MsgpackSerializer_Types_Factory(object):
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook_factory,
-            encoding="utf-8",
             use_list=True,
         )
         return v
@@ -203,69 +205,32 @@ class PickleSerializer(object):
 
     @classmethod
     def dumps(cls, payload: Any) -> bytes:
-        v = pickle_dumps(payload)
+        v = pickle.dumps(payload, protocol=pickle.HIGHEST_PROTOCOL)
         return v
 
 
 if __name__ == "__main__":
-    results = {}
-    for test in ("datetime", "no_datetime"):
-        results[test] = {}
+    if TYPE_CHECKING or __package__:
+        from ._serializer_benchmark import run
+        from ._serializer_benchmark import Serializer
+    else:
+        from _serializer_benchmark import run
+        from _serializer_benchmark import Serializer
 
-        sample_data = {
-            "string": "foo",
-            "int": 100,
-            "bool": True,
-            "list": [1, 2, 3, 4, 5],
-            "tuple": [1, 2, 3, 4, 5],
-            "dict": {"a": 1, 1: "a"},
-        }
-        if test == "datetime":
-            sample_data["datetime"] = datetime.datetime.now()
-            sample_data["date"] = datetime.date.today()
-            sample_data["timedelta"] = datetime.timedelta(seconds=100)
-
-        encoded_msgpack = MsgpackSerializer_Types.dumps(sample_data)
-        encoded_msgpack_factory = MsgpackSerializer_Types_Factory.dumps(sample_data)
-        encoded_pickle = PickleSerializer.dumps(sample_data)
-
-        loaded_msgpack = MsgpackSerializer_Types.loads(encoded_msgpack)
-        loaded_msgpack_factory = MsgpackSerializer_Types_Factory.loads(
-            encoded_msgpack_factory
-        )
-        loaded_pickle = PickleSerializer.loads(encoded_pickle)
-
-        print(loaded_msgpack)
-        print(loaded_msgpack_factory)
-        print(loaded_pickle)
-
-        iterations = 10000
-
-        harness = (
-            ("MsgpackSerializer_Types", "encoded_msgpack", "loaded_msgpack"),
-            (
-                "MsgpackSerializer_Types_Factory",
-                "encoded_msgpack_factory",
-                "loaded_msgpack_factory",
+    run(
+        "Struct-based serializers",
+        (
+            Serializer(
+                "MessagePack struct",
+                MsgpackSerializer_Types.dumps,
+                MsgpackSerializer_Types.loads,
             ),
-            ("PickleSerializer", "encoded_pickle", "loaded_pickle"),
-        )
-
-        for suite in harness:
-            t_loads = timeit.timeit(
-                "%s.dumps(sample_data)" % suite[0],
-                "from __main__ import %s, sample_data" % suite[0],
-                number=iterations,
-            )
-            t_dumps = timeit.timeit(
-                "%s.loads(%s)" % (suite[0], suite[1]),
-                "from __main__ import %s, %s" % (suite[0], suite[1]),
-                number=iterations,
-            )
-            results[test][suite[0]] = {
-                "iterations": iterations,
-                "loads": t_loads,
-                "dumps": t_dumps,
-            }
-
-    pprint.pprint(results)
+            Serializer(
+                "MessagePack struct (local bindings)",
+                MsgpackSerializer_Types_Factory.dumps,
+                MsgpackSerializer_Types_Factory.loads,
+            ),
+            Serializer("Pickle", PickleSerializer.dumps, PickleSerializer.loads),
+        ),
+        datasets=(False, True),
+    )

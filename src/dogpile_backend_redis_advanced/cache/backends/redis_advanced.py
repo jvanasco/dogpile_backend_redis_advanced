@@ -7,9 +7,9 @@ Provides backends for talking to `Redis <http://redis.io>`_.
 """
 
 # stdlib
-from collections import defaultdict
 import re
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Mapping
 from typing import Optional
@@ -31,6 +31,7 @@ from dogpile.cache.backends.redis import RedisBackend
 # local
 from ..serializers import f_pickle_dumps
 from ..serializers import f_pickle_loads
+from ._hash_storage import write_hash_batch
 
 if TYPE_CHECKING:
     import redis
@@ -117,7 +118,7 @@ class RedisAdvancedBackend(RedisBackend):
     """
 
     # set in RedisBackend.__init__
-    lock_class: _RedisLockWrapper
+    lock_class: Type[_RedisLockWrapper]
     lock_template: str = "_lok.{0}"
     debug_cache_size: bool
 
@@ -149,6 +150,23 @@ class RedisAdvancedBackend(RedisBackend):
             return self.lock_class(_mutex)
         return None
 
+    def get_serialized_multi(
+        self, keys: Iterable[KeyType]
+    ) -> Sequence[SerializedReturnType]:
+        """Read keys in order, including empty iterables."""
+        return super().get_serialized_multi(tuple(keys))
+
+    def set_serialized_multi(self, mapping: Mapping[KeyType, bytes]) -> None:
+        """Treat an empty batch as a no-op."""
+        if mapping:
+            super().set_serialized_multi(mapping)
+
+    def delete_multi(self, keys: Iterable[KeyType]) -> None:
+        """Delete keys without issuing an invalid empty command."""
+        keys = tuple(keys)
+        if keys:
+            super().delete_multi(keys)
+
 
 class RedisAlreadySerializedBackend(RedisAdvancedBackend):
     """unsets the (de)serializers; pipes get/set to serialized methods"""
@@ -160,8 +178,8 @@ class RedisAlreadySerializedBackend(RedisAdvancedBackend):
     def get(self, key: KeyType) -> SerializedReturnType:
         return RedisBackend.get_serialized(self, key)
 
-    def get_multi(self, keys: Sequence[KeyType]) -> Sequence[SerializedReturnType]:
-        return RedisBackend.get_serialized_multi(self, keys)
+    def get_multi(self, keys: Iterable[KeyType]) -> Sequence[SerializedReturnType]:
+        return self.get_serialized_multi(keys)
 
     def set(self, key: KeyType, value: bytes) -> None:  # type: ignore[override]
         # override is for purposeful break against super class
@@ -169,7 +187,7 @@ class RedisAlreadySerializedBackend(RedisAdvancedBackend):
 
     def set_multi(self, mapping: Mapping[KeyType, bytes]) -> None:  # type: ignore[override]
         # override is for purposeful break against super class
-        return RedisBackend.set_serialized_multi(self, mapping)
+        self.set_serialized_multi(mapping)
 
 
 class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
@@ -206,14 +224,8 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
     Given `foo` is the redis key/namespace (as in `hmgetall foo` or
     `hmset foo key1 value` or `hmget foo key1`)
 
-    If ``redis_expiration_time_hash`` is set to ``True`` or ``False``, dogpile
-    will first ask Redis if there is a key named `foo` via `exists foo`.  If
-    no key exists, then `redis_expiration_time` will be unconditionally set.
-    If the key already exists, then `redis_expiration_time` will only be set
-    if `redis_expiration_time_hash` is set to `True`.
-
-    if `redis_expiration_time_hash` is set to `False`, then dogpile will not set
-    expiry times on hashes.
+    A positive ``redis_expiration_time`` enables hash expiry. A TTL of zero
+    leaves hashes persistent unless they already have a TTL.
 
     """
 
@@ -252,7 +264,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
     def get_serialized_multi(
         self,
-        keys: Sequence[Union[KeyType, HashKeyType]],
+        keys: Iterable[Union[KeyType, HashKeyType]],
     ) -> Sequence[SerializedReturnType]:
         """
         * figure out which are string keys vs hashes, process 2 queues
@@ -268,9 +280,10 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
         _keys_hash_idx: List[int] = []
 
         # initialize this list
-        values = [None] * len(keys)
+        values: list[bytes | None] = []
 
         for _idx, _k in enumerate(keys):
+            values.append(None)
             if isinstance(_k, tuple):
                 _keys_hash.append(_k)
                 _keys_hash_idx.append(_idx)
@@ -310,100 +323,26 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
         return [v if v is not None else NoValue.NO_VALUE for v in values]
 
-    def set_serialized(
-        self,
-        key: Union[KeyType, HashKeyType],
-        value: bytes,
-    ) -> None:
-        if isinstance(key, tuple):
-            _set_expiry = None
-            if self.redis_expiration_time_hash is True:
-                # unconditionally set
-                _set_expiry = True
-            elif self.redis_expiration_time_hash is None:
-                # conditionally set
-                # redis.py command: `exists(key)`
-                _hash_exists = self.writer_client.exists(key[0])
-                if not _hash_exists:
-                    _set_expiry = True
-
-            # redis.py command: `hset(name, key, value)`
-            self.writer_client.hset(key[0], key[1], value)
-            if _set_expiry:
-                # redis.py command: `expire(name, time)`
-                self.writer_client.expire(key[0], self.redis_expiration_time)
+    def set_serialized(self, key: Union[KeyType, HashKeyType], value: bytes) -> None:
+        """Write a string or one hash field using the configured expiry policy."""
+        if not isinstance(key, tuple):
+            super().set_serialized(key, value)
+        elif self.redis_expiration_time and self.redis_expiration_time_hash is not False:
+            self.set_serialized_multi({key: value})
         else:
-            if self.redis_expiration_time:
-                # redis.py command: `setex(name, time, value)`
-                self.writer_client.setex(key, self.redis_expiration_time, value)
-            else:
-                # redis.py command: `set(name, value)`
-                self.writer_client.set(key, value)
+            name, field = key
+            self.writer_client.hset(name, mapping={field: value})
 
     def set_serialized_multi(
-        self,
-        mapping: Mapping[  # type: ignore[override]
-            Union[KeyType, HashKeyType],
-            bytes,
-        ],
+        self, mapping: Mapping[Union[KeyType, HashKeyType], bytes]  # type: ignore[override]
     ) -> None:
-        """
-        we'll always use a pipeline for this class
-        """
-
-        # derive key types
-        _keys_std = []
-        _keys_hash = []
-        _hash_bucketed: Optional[Dict] = None
-        for _k in mapping.keys():
-            if isinstance(_k, tuple):
-                _keys_hash.append(_k)
-            else:
-                _keys_std.append(_k)
-
-        # redis.py command: `pipeline(transaction=True, shard_hint=None)`
-        pipe = self.writer_client.pipeline()
-
-        # whether or not we have a redis_expiration_time, we set via hmset
-        if _keys_hash:
-            _hash_bucketed = defaultdict(dict)
-            for k in _keys_hash:
-                _hash_bucketed[k[0]][k[1]] = mapping[k]
-            for name in _hash_bucketed.keys():
-                _set_expiry = None
-                if self.redis_expiration_time_hash is True:
-                    # unconditionally set
-                    _set_expiry = True
-                elif self.redis_expiration_time_hash is None:
-                    # conditionally set
-                    # redis.py command: `exists(key)`
-                    _hash_exists = self.writer_client.exists(name)
-                    if not _hash_exists:
-                        _set_expiry = True
-
-                # redis.py command: `hmset(name, mapping)`
-                pipe.hmset(name, _hash_bucketed[name])
-
-                if _set_expiry:
-                    # redis.py command: `expire(name, time)`
-                    pipe.expire(name, self.redis_expiration_time)
-
-        if not self.redis_expiration_time:
-            # redis.py command: `mset(mapping)`
-            if _keys_std:
-                _mapping_str = {k: mapping[k] for k in _keys_std}
-                # redis.py command: `mset(mapping)`
-                pipe.mset(_mapping_str)
-            # bucketed hash was set above
-        else:
-            if _keys_std:
-                for key in _keys_std:
-                    # redis.py command: `setex(name, time, value)`
-                    pipe.setex(key, self.redis_expiration_time, mapping[key])
-            # bucketed hash was set above
-
-        # run the pipeline
-        pipe.execute()
+        """Write a mixed batch with consistent hash expiry."""
+        write_hash_batch(
+            self.writer_client,
+            mapping,
+            self.redis_expiration_time,
+            self.redis_expiration_time_hash,
+        )
 
     def delete(
         self,
@@ -418,7 +357,7 @@ class RedisAdvancedHstoreBackend(RedisAdvancedBackend):
 
     def delete_multi(
         self,
-        keys: Sequence[Union[KeyType, HashKeyType]],
+        keys: Iterable[Union[KeyType, HashKeyType]],
     ) -> None:
         """
         In order to handle multiple deletes, we need to inspect the keys and

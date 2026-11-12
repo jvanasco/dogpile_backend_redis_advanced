@@ -1,8 +1,12 @@
 graft src
 graft tests
+graft docs
+
+include experiments/README.md experiments/benchmark.py
+include experiments/_serializer_benchmark.py experiments/struct_tests.py
+include experiments/lazy_serializer.py
 
 include setup.cfg pyproject.toml
-include tox.ini
 include CHANGELOG.txt
 include LICENSE
 include README.md

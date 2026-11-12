@@ -9,7 +9,7 @@ from typing import Union
 from unittest import TestCase
 
 # pypi
-from dogpile.cache.api import CachedValue
+from dogpile.cache.api import BackendArguments
 from dogpile.cache.api import NO_VALUE
 from dogpile.testing import eq_
 from dogpile.testing.fixtures import _GenericBackendFixture
@@ -21,41 +21,44 @@ import redis
 # local
 import dogpile_backend_redis_advanced  # noqa: F401
 from .test_redis_backend import _TestRedisConn
-from .test_redis_backend import ConfigDict
 from .test_redis_backend import REDIS_HOST
 from .test_redis_backend import REDIS_PORT
 
 # ==============================================================================
 
 
-def my_loads(value):
-    """'
-    we need to unpack the value and stash it into a CachedValue
-    we support strings in this version, because it's used in unit tests
-    that require the ability to set/read raw data.
-    we could disable that test, but this workaround supports it.
-    """
-    # this is True for backward compatibility
-    value = msgpack.unpackb(value, use_list=False, raw=False)
-    if isinstance(value, tuple):
-        return CachedValue(*value)
-    return value
+SerializationConfig = dict[str, BackendArguments]
+
+
+def _load_msgpack(value: bytes) -> Any:
+    """Decode a dogpile region's MessagePack payload."""
+    return msgpack.unpackb(value, use_list=False, raw=False)
 
 
 class _SerializedAlternate(
     _TestRedisConn,
     _GenericBackendTestSuite,
 ):
-    config_args: ConfigDict = {
-        "arguments": {  # type: ignore[typeddict-unknown-key]
+    region_args = {"serializer": msgpack.packb, "deserializer": _load_msgpack}
+    config_args: SerializationConfig = {
+        "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
             "db": 0,
             "foo": "barf",
-            "loads": my_loads,
-            # "dumps": msgpack.packb,
         }
     }
+
+    def test_msgpack_payload(self) -> None:
+        """Verify the custom serializer is used for bytes stored by the region."""
+        region = self._region()
+        key = "msgpack-payload"
+        value = {"numbers": (1, 2, 3)}
+        region.set(key, value)
+        stored = region.backend.get_serialized(key)
+        assert isinstance(stored, bytes)
+        assert _load_msgpack(stored.partition(b"|")[2]) == value
+        assert region.get(key) == value
 
 
 class RedisAdvanced_SerializedAlternate_Test(_SerializedAlternate):
@@ -135,7 +138,7 @@ for k in _keys_mixed:
 
 class RedisAdvancedHstore_HstoreTest(_TestRedisConn, _GenericBackendFixture, TestCase):
     backend = "dogpile_backend_redis_advanced.hstore"
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -207,7 +210,7 @@ class RedisAdvancedHstore_HstoreTest(_TestRedisConn, _GenericBackendFixture, Tes
 
 class RedisAdvancedHstore_HstoreTest_Expires_Hash(RedisAdvancedHstore_HstoreTest):
     redis_expiration_time_hash: Optional[bool] = None
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -283,7 +286,7 @@ class RedisAdvancedHstore_HstoreTest_Expires_Hash_True(
     RedisAdvancedHstore_HstoreTest_Expires_Hash
 ):
     redis_expiration_time_hash = True
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -356,7 +359,7 @@ class RedisAdvancedHstore_HstoreTest_Expires_Hash_None(
     RedisAdvancedHstore_HstoreTest_Expires_Hash
 ):
     redis_expiration_time_hash = None
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -435,7 +438,7 @@ class RedisAdvancedHstore_HstoreTest_Expires_Hash_False(
     RedisAdvancedHstore_HstoreTest_Expires_Hash
 ):
     redis_expiration_time_hash = False
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -504,7 +507,7 @@ class RedisAdvancedHstore_DistributedMutex_CustomPrefixTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
     backend = "dogpile_backend_redis_advanced.hstore"
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": REDIS_HOST,
             "port": REDIS_PORT,
@@ -540,6 +543,7 @@ class RedisAdvancedHstore_DistributedMutex_CustomPrefixTest(
 class _RedisDistributedLockProxy:
     """base lock wrapper for testing"""
 
+    lock_error: type[Exception] = redis.exceptions.LockError
     mutex: Any
     _locked: bool = False
 
@@ -570,7 +574,7 @@ class RedisDistributedLockProxy_Silent(_RedisDistributedLockProxy):
         # defer imports until backend is used
         try:
             self.mutex.release()
-        except redis.exceptions.LockError as e:
+        except self.lock_error:
             # log.debug("safe lock timeout")
             pass
         except Exception as e:
@@ -588,7 +592,7 @@ class RedisDistributedLockProxy_Fatal(_RedisDistributedLockProxy):
         # defer imports until backend is used
         try:
             self.mutex.release()
-        except redis.exceptions.LockError as e:
+        except self.lock_error:
             raise
         except Exception as e:
             raise
@@ -600,10 +604,10 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
     backend = "dogpile_backend_redis_advanced.hstore"
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": "127.0.0.1",
-            "port": 6379,
+            "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
@@ -658,11 +662,12 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Silent_LockTest(
 class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
     _TestRedisConn, _GenericMutexTestSuite
 ):
+    lock_error: type[Exception] = redis.exceptions.LockError
     backend = "dogpile_backend_redis_advanced.hstore"
-    config_args: ConfigDict = {
+    config_args: SerializationConfig = {
         "arguments": {
             "host": "127.0.0.1",
-            "port": 6379,
+            "port": REDIS_PORT,
             "db": 0,
             "distributed_lock": True,
             "thread_local_lock": False,
@@ -690,7 +695,7 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
         try:
             result = reg.get_or_create("creator_sleep", creator_sleep)
             raise ValueError("expected an error!")
-        except redis.exceptions.LockError as e:
+        except self.lock_error:
             pass
 
     def test_pass_lock_timeout__multi(self):
@@ -706,5 +711,5 @@ class RedisAdvancedHstore_RedisDistributedLockProxy_Fatal_LockTest(
         try:
             _values = reg.get_or_create_multi(_keys, _creator_multi)
             raise ValueError("expected an error!")
-        except redis.exceptions.LockError as e:
+        except self.lock_error:
             pass

@@ -1,3 +1,20 @@
+v1.0.0
+    - Report comparable CPU time, encoded size, and decoded memory in the
+      struct and lazy serializer experiments.
+    - Move advanced usage and benchmarks to docs and add a reproducible
+      Redis and Valkey benchmark.
+    - Preserve hashes when no TTL is configured and apply hash expiry in
+      the same transaction as the write on Redis and Valkey.
+    - Reject batches that use the same server key as both a string and a
+      hash. Treat empty batches as no-ops.
+    - Run the Redis serialization and hash expiry suites against Valkey too.
+    - Add standalone Valkey backends with custom lock wrappers, raw bytes,
+      and hash storage, and run Valkey integration tests in CI.
+    - Consolidate packaging and tox settings in setup.cfg and mypy settings
+      in pyproject.toml.
+    - Run Redis tests against Python 3.10 through 3.15 in GitHub Actions
+      and publish HTML coverage reports for each Python version.
+
 v0.5.0
     working with modern dogpile
     - drop py3.7, py3.8, py3.9
