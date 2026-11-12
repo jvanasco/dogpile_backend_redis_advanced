@@ -1,4 +1,4 @@
-Unreleased
+v1.0.0
     - Report comparable CPU time, encoded size, and decoded memory in the
       struct and lazy serializer experiments.
     - Move advanced usage and benchmarks to docs and add a reproducible
