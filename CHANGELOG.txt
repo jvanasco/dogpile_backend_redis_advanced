@@ -1,4 +1,6 @@
 Unreleased
+    - Move advanced usage and benchmarks to docs and add a reproducible
+      Redis and Valkey benchmark.
     - Preserve hashes when no TTL is configured and apply hash expiry in
       the same transaction as the write on Redis and Valkey.
     - Reject batches that use the same server key as both a string and a
