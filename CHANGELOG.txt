@@ -1,4 +1,6 @@
 Unreleased
+    - Add standalone Valkey backends with custom lock wrappers, raw bytes,
+      and hash storage, and run Valkey integration tests in CI.
     - Consolidate packaging and tox settings in setup.cfg and mypy settings
       in pyproject.toml.
     - Run Redis tests against Python 3.10 through 3.15 in GitHub Actions

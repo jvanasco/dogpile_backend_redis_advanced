@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   tests:
-    name: Redis tests on Python ${{ matrix.python }}
+    name: Redis and Valkey tests on Python ${{ matrix.python }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -39,8 +39,18 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
+      valkey:
+        image: valkey/valkey:9.1.2
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6380:6379
     env:
       DOGPILE_REDIS_PORT: "6379"
+      DOGPILE_VALKEY_PORT: "6380"
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
