@@ -82,6 +82,14 @@ proxy to enforce entry expiry. `Serializer_Raw_ProxyBackend` also omits
 stored metadata and supports a narrower set of payload types. Use separate
 key namespaces when comparing or migrating between encodings.
 
+### Serializer experiments
+
+`struct_tests.py` compares compact MessagePack extensions for dates and times
+with pickle. `lazy_serializer.py` compares eager and lazy decoding of identical
+MessagePack bytes, measuring both one-field and full-record reads. Both scripts
+verify round trips and report encoded size, CPU time, and retained Python
+memory. See the [experiment commands and sample results](../experiments/README.md#compare-serializers).
+
 ## Distributed locks
 
 Set `distributed_lock=True` to use the server's locks. The advanced backends

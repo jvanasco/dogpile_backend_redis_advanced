@@ -46,6 +46,12 @@ distributed locks. See [benchmark results](docs/benchmark-results.md) for the
 Redis and Valkey comparison and [experiments](experiments/README.md) for
 reproduction commands.
 
+The [custom serializer experiments](experiments/README.md#compare-serializers)
+compare struct-based MessagePack, eager and lazy decoding, and pickle on
+the same records. They report encoded size, CPU time, and retained Python
+memory.
+
+
 ## Testing
 
 Run `tox` with Redis listening on port 6379 or set `DOGPILE_REDIS_PORT` for
