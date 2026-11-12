@@ -1,4 +1,6 @@
 Unreleased
+    - Report comparable CPU time, encoded size, and decoded memory in the
+      struct and lazy serializer experiments.
     - Move advanced usage and benchmarks to docs and add a reproducible
       Redis and Valkey benchmark.
     - Preserve hashes when no TTL is configured and apply hash expiry in
