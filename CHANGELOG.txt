@@ -1,4 +1,8 @@
 Unreleased
+    - Preserve hashes when no TTL is configured and apply hash expiry in
+      the same transaction as the write on Redis and Valkey.
+    - Reject batches that use the same server key as both a string and a
+      hash. Treat empty batches as no-ops.
     - Run the Redis serialization and hash expiry suites against Valkey too.
     - Add standalone Valkey backends with custom lock wrappers, raw bytes,
       and hash storage, and run Valkey integration tests in CI.

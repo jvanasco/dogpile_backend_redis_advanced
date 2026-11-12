@@ -18,6 +18,7 @@ from dogpile.cache.backends.valkey import ValkeyBackend
 
 from ..serializers import f_pickle_dumps
 from ..serializers import f_pickle_loads
+from ._hash_storage import write_hash_batch
 
 
 HashKeyType = tuple[str, str]
@@ -45,6 +46,23 @@ class ValkeyAdvancedBackend(ValkeyBackend):
         # dogpile's wrapper implements the CacheMutex interface structurally.
         return cast(CacheMutex | None, mutex)
 
+    def get_serialized_multi(
+        self, keys: Iterable[KeyType]
+    ) -> Sequence[SerializedReturnType]:
+        """Read keys in order, including empty iterables."""
+        return super().get_serialized_multi(tuple(keys))
+
+    def set_serialized_multi(self, mapping: Mapping[KeyType, bytes]) -> None:
+        """Treat an empty batch as a no-op."""
+        if mapping:
+            super().set_serialized_multi(mapping)
+
+    def delete_multi(self, keys: Iterable[KeyType]) -> None:
+        """Delete keys without issuing an invalid empty command."""
+        keys = tuple(keys)
+        if keys:
+            super().delete_multi(keys)
+
 
 class ValkeyAlreadySerializedBackend(ValkeyAdvancedBackend):
     """Accept bytes from a caller or a serialization proxy."""
@@ -56,7 +74,7 @@ class ValkeyAlreadySerializedBackend(ValkeyAdvancedBackend):
         return self.get_serialized(key)
 
     def get_multi(self, keys: Iterable[KeyType]) -> Sequence[SerializedReturnType]:
-        return self.get_serialized_multi(list(keys))
+        return self.get_serialized_multi(keys)
 
     def set(self, key: KeyType, value: bytes) -> None:  # type: ignore[override]
         self.set_serialized(key, value)
@@ -114,56 +132,33 @@ class ValkeyAdvancedHstoreBackend(ValkeyAdvancedBackend):
                 list[bytes | None],
                 self.reader_client.hmget(name, [field for _, field in fields]),
             )
-            for (index, _), value in zip(fields, hash_values):
-                values[index] = NO_VALUE if value is None else value
+            for (index, _), hash_value in zip(fields, hash_values):
+                values[index] = NO_VALUE if hash_value is None else hash_value
         return values
 
-    def _should_expire_hash(self, name: str) -> bool:
-        """Decide before writing whether to set the hash TTL."""
-        if not self.valkey_expiration_time:
-            return False
-        policy = self.valkey_expiration_time_hash
-        return policy is True or (
-            policy is None and not self.writer_client.exists(name)
-        )
-
     def set_serialized(self, key: ValkeyKeyType, value: bytes) -> None:
-        if isinstance(key, tuple):
-            name, field = key
-            expire = self._should_expire_hash(name)
-            self.writer_client.hset(name, mapping={field: value})
-            if expire:
-                self.writer_client.expire(name, self.valkey_expiration_time)
-        else:
+        """Write a string or one hash field using the configured expiry policy."""
+        if not isinstance(key, tuple):
             super().set_serialized(key, value)
+        elif (
+            self.valkey_expiration_time
+            and self.valkey_expiration_time_hash is not False
+        ):
+            self.set_serialized_multi({key: value})
+        else:
+            name, field = key
+            self.writer_client.hset(name, mapping={field: value})
 
     def set_serialized_multi(
         self, mapping: Mapping[ValkeyKeyType, bytes]  # type: ignore[override]
     ) -> None:
-        """Write mixed string and hash keys in one pipeline."""
-        if not mapping:
-            return
-        strings: dict[KeyType, bytes] = {}
-        hashes: dict[str, dict[str, bytes]] = defaultdict(dict)
-        for key, value in mapping.items():
-            if isinstance(key, tuple):
-                hashes[key[0]][key[1]] = value
-            else:
-                strings[key] = value
-
-        with self.writer_client.pipeline() as pipe:
-            for name, fields in hashes.items():
-                expire = self._should_expire_hash(name)
-                pipe.hset(name, mapping=fields)
-                if expire:
-                    pipe.expire(name, self.valkey_expiration_time)
-
-            if self.valkey_expiration_time:
-                for key, value in strings.items():
-                    pipe.setex(key, self.valkey_expiration_time, value)
-            elif strings:
-                pipe.mset(strings)
-            pipe.execute()
+        """Write a mixed batch with consistent hash expiry."""
+        write_hash_batch(
+            self.writer_client,
+            mapping,
+            self.valkey_expiration_time,
+            self.valkey_expiration_time_hash,
+        )
 
     def delete(self, key: ValkeyKeyType) -> None:
         if isinstance(key, tuple):
