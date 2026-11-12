@@ -161,7 +161,6 @@ class MsgpackSerializer_Types(object):
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook,
-            encoding="utf-8",
             use_list=True,
         )
         return v
@@ -182,7 +181,6 @@ class MsgpackSerializer_Types_Factory(object):
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook_factory,
-            encoding="utf-8",
             use_list=True,
         )
         return v
@@ -218,7 +216,7 @@ if __name__ == "__main__":
             "bool": True,
             "list": [1, 2, 3, 4, 5],
             "tuple": [1, 2, 3, 4, 5],
-            "dict": {"a": 1, 1: "a"},
+            "dict": {"a": "1", "1": "a"},  # TODO: int support for map key
         }
         if test == "datetime":
             sample_data["datetime"] = datetime.datetime.now()

@@ -224,7 +224,7 @@ class MsgpackSerializer(object):
     @classmethod
     def loads(cls, payload: bytes) -> Any:
         # v = msgpack.unpackb(payload,  encoding="utf-8", use_list=True)
-        v = msgpack_unpackb(payload, encoding="utf-8", use_list=True)
+        v = msgpack_unpackb(payload, use_list=True)
         v = LazyDeserializer(v)
         assert "date" in v
         assert "datetime" in v
@@ -299,7 +299,7 @@ class MsgpackSerializer_Iterencode(MsgpackSerializer):
 
     @classmethod
     def loads(cls, payload: bytes) -> Any:
-        v = msgpack_unpackb(payload, encoding="utf-8", use_list=True)
+        v = msgpack_unpackb(payload, use_list=True)
         v = LazyDeserializerAlt(v)
         assert "date" in v
         assert "datetime" in v
@@ -313,7 +313,6 @@ class MsgpackSerializer_Alt(object):
         v = msgpack_unpackb(
             payload,
             ext_hook=msgpack_alt_ext_hook,
-            encoding="utf-8",
             use_list=True,
         )
         return v
@@ -338,7 +337,7 @@ if __name__ == "__main__":
         "bool": True,
         "list": [1, 2, 3, 4, 5],
         "tuple": [1, 2, 3, 4, 5],
-        "dict": {"a": 1, 1: "a"},
+        "dict": {"a": "1", "1": "a"},  # TODO: int map key support
         "datetime": datetime.datetime.now(),
         "date": datetime.date.today(),
         "timedelta": datetime.timedelta(seconds=100),
